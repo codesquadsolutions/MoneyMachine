@@ -1,5 +1,6 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
+import { ADD_TO_CHROME_LABEL, hasChromeWebStoreUrl, chromeWebStoreUrl } from "../content/download";
 
 export function Logo() {
   return (
@@ -11,37 +12,37 @@ export function Logo() {
 }
 
 export function Nav() {
-  const { user, joined, leave } = useAuth();
-  const location = useLocation();
-
-  function goWaitlist(event) {
-    if (location.pathname === "/" && location.hash === "#waitlist") {
-      event.preventDefault();
-      document.getElementById("waitlist")?.scrollIntoView({ behavior: "smooth" });
-    }
-  }
+  const { user, leave } = useAuth();
+  const store = chromeWebStoreUrl();
 
   return (
     <nav className="top">
       <div className="w">
         <Logo />
         <div className="links">
-          <Link to={{ pathname: "/", hash: "reel" }}>Reel</Link>
-          <Link to={{ pathname: "/", hash: "features" }}>Features</Link>
-          <Link to={{ pathname: "/", hash: "how" }}>How it works</Link>
-          <Link to={{ pathname: "/", hash: "compat" }}>Compatibility</Link>
-          <Link to={{ pathname: "/", hash: "faq" }}>FAQ</Link>
+          <Link to="/reel">Reel</Link>
+          <Link to="/features">Features</Link>
+          <Link to="/how-it-works">How it works</Link>
+          <Link to="/platforms">Platforms</Link>
+          <Link to="/faq">FAQ</Link>
+          <Link to="/pricing" className="nav-muted">
+            Pro pricing
+          </Link>
         </div>
-        {joined && user ? (
+        {user ? (
           <div className="nav-auth">
             <span className="who">{user.displayName || user.email}</span>
             <button className="btn s sm" type="button" onClick={leave}>
               Sign out
             </button>
           </div>
+        ) : hasChromeWebStoreUrl() ? (
+          <a className="btn p sm" href={store} target="_blank" rel="noopener noreferrer">
+            {ADD_TO_CHROME_LABEL}
+          </a>
         ) : (
-          <Link className="btn p sm" to="/#waitlist" onClick={goWaitlist}>
-            Join the waitlist
+          <Link className="btn p sm" to={{ pathname: "/", hash: "download" }}>
+            {ADD_TO_CHROME_LABEL}
           </Link>
         )}
       </div>

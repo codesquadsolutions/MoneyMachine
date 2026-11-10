@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  async function join(platform) {
+  async function join() {
     const [{ auth, db, googleProvider, firebaseReady: configured }, { signInWithPopup }, { doc, getDoc, serverTimestamp, setDoc }] =
       await Promise.all([import("./firebase"), import("firebase/auth"), import("firebase/firestore")]);
     if (!configured) {
@@ -73,7 +73,6 @@ export function AuthProvider({ children }) {
       email: current.email,
       displayName: current.displayName || "",
       photoURL: current.photoURL || "",
-      platform,
     };
     if (!existing.exists()) data.createdAt = serverTimestamp();
     await setDoc(ref, data, { merge: true });

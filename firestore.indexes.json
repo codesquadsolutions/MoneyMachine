@@ -1,0 +1,31 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "affiliateConversions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "affiliateId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "affiliateLeads",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "email", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "affiliates",
+      "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "email", "order": "ASCENDING" }]
+    },
+    {
+      "collectionGroup": "affiliateTickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "affiliateId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

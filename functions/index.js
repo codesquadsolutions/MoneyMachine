@@ -251,6 +251,18 @@ export const adminWaitlist = onRequest(
   },
 );
 
+export {
+  submitAffiliateInterest,
+  registerAffiliate,
+  getAffiliateDashboard,
+  submitAffiliateTicket,
+  createCheckoutSession,
+  getPricingCatalog,
+  isAffiliateAdmin,
+} from "./affiliate/callables.js";
+export { affiliateAdmin } from "./affiliate/adminHttp.js";
+export { dodoWebhook } from "./affiliate/webhook.js";
+
 export const removeWaitlistPerson = onCall({ region: "us-central1", invoker: "public", cors: true }, async (request) => {
   if (request.auth?.token?.email !== adminEmail) {
     throw new HttpsError("permission-denied", "Sign in required.");

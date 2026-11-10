@@ -134,3 +134,25 @@ tr:last-child td { border: 0; }
   .dialog .actions { flex-wrap: wrap; }
   .dialog .actions .btn { flex: 1; }
 }
+
+.admin-links { display: flex; gap: 12px; align-items: center; margin-left: auto; margin-right: 12px; }
+.admin-links a { color: var(--m); font-weight: 700; font-size: 14px; }
+.admin-links a.on, .admin-links a:hover { color: var(--g); }
+.aff-master .ticket-grid { display: grid; gap: 12px; margin-top: 12px; }
+.aff-master .ticket { padding: 16px; text-align: left; }
+.aff-master .ticket .row { display: flex; justify-content: space-between; gap: 8px; }
+.aff-master .reply { color: var(--g); }
+.badge.pending { color: #f5c842; }
+.badge.active { color: var(--g); }
+.badge.suspended { color: #ff8f8f; }
+.badge.open { color: #f5c842; }
+.badge.in_progress { color: #7ad9ff; }
+.badge.resolved { color: var(--g); }
+.badge.new { color: #f5c842; }
+.badge.contacted { color: #7ad9ff; }
+.badge.onboarded { color: var(--g); }
+.badge.rejected { color: #ff8f8f; }
+.aff-leads { margin: 20px 0 32px; }
+.aff-leads h2, .aff-section-title { margin: 16px 0 8px; font-size: 18px; }
+.aff-master .check { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.aff-master .check input { width: auto; }

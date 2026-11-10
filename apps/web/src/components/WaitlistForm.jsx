@@ -1,15 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "../auth";
 
-const platforms = [
-  { id: "topstepx", label: "TopstepX" },
-  { id: "tradingview", label: "TradingView" },
-  { id: "both", label: "Both" },
-];
-
 export function WaitlistForm() {
   const { user, joined, ready, join, firebaseReady, quietErrors } = useAuth();
-  const [platform, setPlatform] = useState("topstepx");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -29,7 +22,7 @@ export function WaitlistForm() {
     setError("");
     setBusy(true);
     try {
-      await join(platform);
+      await join();
     } catch (err) {
       if (!quietErrors.has(err.code)) {
         setError(err.message || "Could not join the waitlist. Try again.");
@@ -41,22 +34,12 @@ export function WaitlistForm() {
 
   return (
     <form className="wait" onSubmit={onSubmit}>
-      <label>
-        I trade on
-        <select value={platform} onChange={(event) => setPlatform(event.target.value)} disabled={busy}>
-          {platforms.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.label}
-            </option>
-          ))}
-        </select>
-      </label>
       <button className="btn p" type="submit" disabled={busy || !firebaseReady}>
         {busy ? "Signing in…" : "Join the waitlist"}
       </button>
       <p className="hint">
         {firebaseReady
-          ? "Uses your Google account. We store your email so we can send the install link."
+          ? "Uses your Google account. We store your email so we can send the install link. One subscription flips on every platform Flipur supports."
           : "Add your Firebase web config to .env.local to turn on the waitlist."}
       </p>
       {error ? <p className="err">{error}</p> : null}

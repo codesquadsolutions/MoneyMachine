@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { BrowserRouter, Link, Route, Routes, useLocation } from "react-router-dom";
+import { AffiliateMaster } from "./AffiliateMaster.jsx";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
 import { auth, db, firebaseReady } from "./firebase";
@@ -112,6 +114,16 @@ function loginMessage(error) {
 }
 
 export default function App() {
+  return (
+    <BrowserRouter>
+      <AdminShell />
+    </BrowserRouter>
+  );
+}
+
+function AdminShell() {
+  const location = useLocation();
+  const isAffiliateMaster = location.pathname.startsWith("/affiliate-master");
   const [ready, setReady] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [people, setPeople] = useState([]);
@@ -155,18 +167,29 @@ export default function App() {
   if (!firebaseReady) return <LocalAdmin />;
   if (!authed) return <Login onSubmit={signIn} />;
 
+  if (isAffiliateMaster) {
+    return <AffiliateMaster onSignOut={() => signOut(auth)} />;
+  }
+
   return (
-    <Dashboard
-      people={people}
-      query={query}
-      setQuery={setQuery}
-      source="firestore"
-      call={save}
-      onChange={setPeople}
-      onError={setError}
-      error={error}
-      onSignOut={() => signOut(auth)}
-    />
+    <Routes>
+      <Route
+        path="*"
+        element={
+          <Dashboard
+            people={people}
+            query={query}
+            setQuery={setQuery}
+            source="firestore"
+            call={save}
+            onChange={setPeople}
+            onError={setError}
+            error={error}
+            onSignOut={() => signOut(auth)}
+          />
+        }
+      />
+    </Routes>
   );
 }
 
@@ -293,10 +316,14 @@ function Dashboard({ people, query, setQuery, source, call, onChange, onError, e
   return (
     <main className="w admin">
       <header className="bar">
-        <a className="logo" href="/">
+        <Link className="logo" to="/">
           <img src="/logo.png" alt="" />
           Flipur Trade<span> admin</span>
-        </a>
+        </Link>
+        <nav className="admin-links">
+          <Link to="/">Waitlist</Link>
+          <Link to="/affiliate-master">Affiliates</Link>
+        </nav>
         <button className="btn s sm" type="button" onClick={onSignOut}>
           Sign out
         </button>

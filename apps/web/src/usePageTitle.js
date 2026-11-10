@@ -1,12 +1,10 @@
-import { useEffect } from "react";
+import { useSeo, SEO } from "./seo";
 
-const homeTitle = "Flipur.trade – Flip every order. Same price, opposite side.";
-
+/** @deprecated Prefer useSeo with title, description, and path. */
 export function usePageTitle(title) {
-  useEffect(() => {
-    document.title = title;
-    return () => {
-      document.title = homeTitle;
-    };
-  }, [title]);
+  useSeo({
+    title,
+    description: SEO.home.description,
+    path: typeof window !== "undefined" ? window.location.pathname : "/",
+  });
 }

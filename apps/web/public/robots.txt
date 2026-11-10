@@ -1,0 +1,7 @@
+# Flipur.trade — public marketing site
+User-agent: *
+Allow: /
+
+# Admin app is hosted separately (flipur admin target); no admin paths here.
+
+Sitemap: https://flipur.trade/sitemap.xml

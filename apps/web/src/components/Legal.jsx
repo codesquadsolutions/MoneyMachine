@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
-import { usePageTitle } from "../usePageTitle";
+import { SEO, useSeo } from "../seo";
 
 export function Privacy() {
-  usePageTitle("Privacy Policy – Flipur.trade");
+  useSeo({ ...SEO.privacy, path: "/privacy" });
   return (
     <main className="w legal">
       <h1>Privacy Policy</h1>
-      <p>Last updated October 31, 2026.</p>
+      <p>Last updated November 10, 2026.</p>
       <p className="note">
         This is a starter policy written for the Flipur site and waitlist. Read it and change anything that does not match how you operate before you rely on it. It is not legal advice.
       </p>
@@ -19,7 +19,6 @@ export function Privacy() {
       <ul>
         <li>Your Google account email address</li>
         <li>The name and profile photo URL Google shares with the sign-in</li>
-        <li>The platform you pick: TopstepX, TradingView, or both</li>
         <li>The time you joined</li>
       </ul>
       <p>
@@ -41,17 +40,17 @@ export function Privacy() {
 }
 
 export function Terms() {
-  usePageTitle("Terms of Service – Flipur.trade");
+  useSeo({ ...SEO.terms, path: "/terms" });
   return (
     <main className="w legal">
       <h1>Terms of Service</h1>
-      <p>Last updated October 31, 2026.</p>
+      <p>Last updated November 10, 2026.</p>
       <p className="note">
         These are starter terms for the Flipur website and the extension described here. Review them before you publish. They are not legal advice.
       </p>
       <h2>The product</h2>
       <p>
-        Flipur is psychological software. It flips the side and order type of orders you place in your browser on supported platforms. It is not a broker, not a signal service, and not financial, investment, or trading advice. It is not affiliated with TopstepX, TradingView, or any prop firm.
+        Flipur is psychological software. It flips the side and order type of orders you place in your browser on ProjectX, Delta Exchange, TradingView, and Match-Trader. One subscription covers every one of those platforms. It is not a broker, not a signal service, and not financial, investment, or trading advice. It is not affiliated with ProjectX, Delta Exchange, TradingView, Match-Trader, or any prop firm.
       </p>
       <h2>Availability</h2>
       <p>
