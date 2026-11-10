@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "money-machine-247"
+  },
+  "targets": {
+    "money-machine-247": {
+      "hosting": {
+        "web": [
+          "money-machine-247"
+        ],
+        "admin": [
+          "money-machine-247-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

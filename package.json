@@ -1,0 +1,12 @@
+{
+  "name": "flipur",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "dev:admin": "npm --prefix apps/admin run dev",
+    "build:web": "npm --prefix apps/web run build",
+    "build:admin": "npm --prefix apps/admin run build",
+    "build": "npm run build:web && npm run build:admin"
+  }
+}
