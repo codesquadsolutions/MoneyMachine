@@ -74,6 +74,10 @@ data/waitlist.json
 .env.*.local
 functions/.env
 functions/.env.*
+api/.env
+api/serviceAccount.json
+**/serviceAccount*.json
+**/*firebase-adminsdk*.json
 
 # dataconnect generated files
 .dataconnect

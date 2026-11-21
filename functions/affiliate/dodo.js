@@ -1,6 +1,7 @@
 import DodoPayments from "dodopayments";
 import { defineSecret } from "firebase-functions/params";
 import { FLIPUR_DODO_PRODUCT_IDS } from "./dodoProducts.js";
+import { siteOrigin } from "./constants.js";
 
 export const dodoApiKey = defineSecret("DODO_PAYMENTS_API_KEY");
 export const dodoWebhookKey = defineSecret("DODO_PAYMENTS_WEBHOOK_KEY");
@@ -64,17 +65,25 @@ function resolveProductId(plan) {
 
 const AUTORENEW_PERCENT = 5;
 
+/** Returns discount code only if it exists in Dodo (avoids checkout failures). */
+async function discountCodeIfValid(client, code) {
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!normalized) return null;
+  try {
+    await client.discounts.retrieveByCode(normalized);
+    return normalized;
+  } catch {
+    return null;
+  }
+}
+
 /** Ensures a store-wide 5% code for auto-renew opt-in at checkout. */
 export async function ensureAutorenewDiscount() {
   const client = dodoClient();
   if (!client) return null;
   const fromSecret = (dodoAutorenewDiscountCode.value() || "AUTORENEW5").trim().toUpperCase();
-  try {
-    const existing = await client.discounts.retrieveByCode(fromSecret);
-    return existing.discount_id || existing.id || fromSecret;
-  } catch {
-    // not found
-  }
+  const existing = await discountCodeIfValid(client, fromSecret);
+  if (existing) return existing;
   try {
     await client.discounts.create({
       type: "percentage",
@@ -85,7 +94,7 @@ export async function ensureAutorenewDiscount() {
     return fromSecret;
   } catch (err) {
     console.error("dodo.autorenew discount failed", err.message || err);
-    return fromSecret;
+    return null;
   }
 }
 
@@ -106,16 +115,17 @@ export async function createFlipurCheckoutSession({
   const codes = [];
   if (autoRenew) {
     const autoCode = await ensureAutorenewDiscount();
-    if (autoCode) codes.push(String(autoCode).toUpperCase());
+    if (autoCode) codes.push(autoCode);
   }
   if (discountCode) {
-    codes.push(String(discountCode).toUpperCase());
+    const affiliateCode = await discountCodeIfValid(client, discountCode);
+    if (affiliateCode) codes.push(affiliateCode);
   }
 
   const payload = {
     product_cart: [{ product_id: productId, quantity: 1 }],
     customer: { email, ...(name ? { name } : {}) },
-    return_url: `${process.env.FLIPUR_SITE_ORIGIN || "http://localhost:5173"}/checkout/success`,
+    return_url: `${siteOrigin}/checkout/success`,
     metadata: {
       plan,
       auto_renew: String(autoRenew),
@@ -126,6 +136,15 @@ export async function createFlipurCheckoutSession({
   if (codes.length) {
     payload.discount_codes = [...new Set(codes)];
   }
-  const session = await client.checkoutSessions.create(payload);
-  return { checkoutUrl: session.checkout_url, sessionId: session.session_id };
+  try {
+    const session = await client.checkoutSessions.create(payload);
+    return { checkoutUrl: session.checkout_url, sessionId: session.session_id };
+  } catch (err) {
+    const detail =
+      err?.error?.message || err?.message || (typeof err === "string" ? err : "Dodo checkout failed");
+    console.error("dodo.checkoutSessions.create", detail, { productId, plan, email: email.replace(/(.{2}).+(@.*)/, "$1***$2") });
+    const error = new Error(detail);
+    error.code = "failed-precondition";
+    throw error;
+  }
 }

@@ -2,23 +2,44 @@ import { useEffect } from "react";
 
 export const SITE_URL = "https://flipur.trade";
 export const SITE_NAME = "Flipur";
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/logo.png`;
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/og.png`;
 
 export const SEO = {
   home: {
-    title: "Flipur.trade – Flip every order. Same price, opposite side.",
+    title: "Flipur.trade – Psychological trading software. Fix the click, not the chart.",
     description:
-      "Download Flipur free for Chrome. Five free order flips, then Pro if you want more. One subscription works on ProjectX, Delta Exchange, TradingView, and Match-Trader. Trading psychology and execution, not financial advice.",
+      "Your analysis isn't wrong—your order placing is. Flipur flips side and type in Chrome before the order sends. Five free flips, then Pro. ProjectX, Delta Exchange, TradingView, Match-Trader. Execution psychology, not financial advice.",
   },
   privacy: {
     title: "Privacy Policy – Flipur.trade",
     description:
-      "How Flipur.trade and the Flipur waitlist use your Google account email, store waitlist data in Firebase, and handle the Chrome extension. Updated November 2026.",
+      "How Flipur.trade handles checkout, affiliate interest, partner accounts, the Chrome extension, and support chat. Updated November 2026.",
   },
   terms: {
     title: "Terms of Service – Flipur.trade",
     description:
-      "Terms for the Flipur Chrome extension and flipur.trade: psychological trading software, not a broker or financial advice. Your orders, prop firm rules, and waitlist.",
+      "Terms for the Flipur Chrome extension and flipur.trade: psychological trading software, subscriptions, partners, not a broker or financial advice.",
+  },
+  security: {
+    title: "Security & data – Flipur Chrome extension",
+    description: "How Flipur handles order data in the browser, logging, payments, and what we do not access.",
+  },
+  billing: {
+    title: "Billing & cancellation – Flipur Pro",
+    description:
+      "How Flipur Pro subscriptions work with Dodo Payments and how to turn off auto-renew so you are not charged again.",
+  },
+  about: {
+    title: "About Flipur – Trading psychology in Chrome",
+    description: "Why Flipur exists, who operates it, and how to contact the team.",
+  },
+  support: {
+    title: "Support – Flipur.trade",
+    description: "Install help, Pro activation, billing, and prop firm guidance for Flipur users.",
+  },
+  checkoutSuccess: {
+    title: "Subscription received – Flipur",
+    description: "Next steps after Flipur Pro checkout: extension unlock, support, and billing.",
   },
   notFound: {
     title: "Page not found – Flipur.trade",
@@ -61,7 +82,7 @@ const ORG_JSON_LD = {
   "@type": "Organization",
   name: "Flipur",
   url: SITE_URL,
-  logo: DEFAULT_OG_IMAGE,
+  logo: `${SITE_URL}/logo.png`,
   sameAs: ["https://www.instagram.com/flipurtrade"],
   description:
     "Flipur builds browser tools that help traders flip order side and type on web trading platforms.",
@@ -90,7 +111,7 @@ export function buildSoftwareApplicationJsonLd() {
       description: "Five free order flips; paid Pro subscription after trial.",
     },
     description:
-      "Chrome extension that flips the side and order type of orders you place on supported trading platforms before they are sent. Try five flips free.",
+      "Psychological trading software for execution: flips order side and type in Chrome before the request is sent. Try five flips free.",
     url: SITE_URL,
     image: DEFAULT_OG_IMAGE,
   };

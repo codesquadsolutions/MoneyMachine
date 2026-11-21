@@ -9,7 +9,9 @@ export function AffiliateRegister() {
     instagram: "",
     youtube: "",
     snapchat: "",
-    website: "",
+    linkedin: "",
+    discord: "",
+    telegram: "",
     note: "",
   });
   const [error, setError] = useState("");
@@ -82,14 +84,25 @@ export function AffiliateRegister() {
           <input value={form.snapchat} onChange={(e) => setField("snapchat", e.target.value)} placeholder="@handle" />
         </label>
         <label>
-          Website
-          <input value={form.website} onChange={(e) => setField("website", e.target.value)} placeholder="https://" />
+          LinkedIn
+          <input value={form.linkedin} onChange={(e) => setField("linkedin", e.target.value)} placeholder="Profile URL or handle" />
+        </label>
+        <label>
+          Discord
+          <input value={form.discord} onChange={(e) => setField("discord", e.target.value)} placeholder="username or invite link" />
+        </label>
+        <label>
+          Telegram
+          <input value={form.telegram} onChange={(e) => setField("telegram", e.target.value)} placeholder="@handle or channel link" />
         </label>
         <label>
           Anything else? <span className="opt">(optional)</span>
           <textarea value={form.note} onChange={(e) => setField("note", e.target.value)} rows={3} placeholder="Audience, niche, how you promote tools…" />
         </label>
-        <p className="muted sm">Share at least one of Instagram, YouTube, Snapchat, or website.</p>
+        <p className="muted sm">
+          Share at least one channel (Instagram, YouTube, Snapchat, LinkedIn, Discord, or Telegram). By applying you agree to our{" "}
+          <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>.
+        </p>
         {error ? <p className="err">{error}</p> : null}
         <button className="btn p" type="submit" disabled={busy}>
           {busy ? "Sending…" : "Show interest"}

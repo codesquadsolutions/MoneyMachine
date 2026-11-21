@@ -4,9 +4,15 @@
   "version": "1.0.0",
   "scripts": {
     "dev:web": "npm --prefix apps/web run dev",
+    "dev:api": "npm --prefix api run dev",
     "dev:admin": "npm --prefix apps/admin run dev",
+    "sync:chat-kb": "powershell -NoProfile -Command \"Copy-Item -Force 'docs/Flipur-BotPenguin-Knowledge-Base.md' '$env:USERPROFILE/OneDrive/Desktop/voice/chatbot/chatbot/kb/flipur.md'; Copy-Item -Force 'docs/flipur-faq-qa.md' '$env:USERPROFILE/OneDrive/Desktop/voice/chatbot/chatbot/kb/faq-qa.md'; Copy-Item -Force '$env:USERPROFILE/OneDrive/Desktop/voice/chatbot/chatbot/widget/sdk.js' 'apps/web/public/support-widget/sdk.js'\"",
     "build:web": "npm --prefix apps/web run build",
     "build:admin": "npm --prefix apps/admin run build",
-    "build": "npm run build:web && npm run build:admin"
+    "build": "npm run build:web && npm run build:admin",
+    "deploy:web": "npm run build:web && npx firebase-tools deploy --only hosting:web",
+    "deploy:admin": "npm run build:admin && npx firebase-tools deploy --only hosting:admin",
+    "deploy:sandbox-backend": "npm run build:web && npx firebase-tools deploy --only firestore:rules,firestore:indexes,functions,hosting:web --force",
+    "deploy:functions": "npx firebase-tools deploy --only functions --force"
   }
 }

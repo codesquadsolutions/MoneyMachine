@@ -126,6 +126,8 @@ export const adminWaitlist = onRequest(
   {
     secrets: [adminPassword],
     cors: [
+      "https://flipur-404bd-admin.web.app",
+      "https://flipur-404bd-admin.firebaseapp.com",
       "https://money-machine-247-admin.web.app",
       "https://money-machine-247-admin.firebaseapp.com",
       "https://admin.flipur.trade",

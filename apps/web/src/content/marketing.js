@@ -1,3 +1,5 @@
+import { COMPANY } from "./trust";
+
 export const platforms = [
   { name: "ProjectX", src: "/platforms/projectx.png", tone: "dark" },
   { name: "Delta Exchange", src: "/platforms/delta.png", tone: "dark" },
@@ -33,4 +35,47 @@ export const faqs = [
   ["Is it safe to use with my prop firm account?", "Flipur is a browser-based extension that changes your order before it is sent, so check that your firm's rules allow this. Test on a practice or paper account first. You are responsible for every order placed from your account."],
   ["Which browsers and platforms are supported?", "Google Chrome (version 111 or newer). One Flipur subscription flips orders on ProjectX, Delta Exchange, TradingView, and Match-Trader, on any account you have connected there."],
   ["What if an order is not recognised?", "Flipur sends it unchanged and prints a warning with the original payload in the browser console, so you can see exactly what happened."],
+  [
+    "How do I subscribe to Pro?",
+    "After five free flips, the extension prompts you to finish checkout. You can also subscribe anytime at flipur.trade/pricing. Use the same email at checkout that you use in the extension.",
+  ],
+  [
+    "Pro is not active after I paid",
+    "Wait a few minutes, restart Chrome, and try another flip. Check your receipt email matches the address you use in the extension. Still stuck? Email support from flipur.trade/support.",
+  ],
+  [
+    "How do I cancel or stop the next auto-pay?",
+    `Turn off auto-renew in the Dodo customer portal (link in your receipt) before your renewal date so you are not charged again. Steps: flipur.trade/billing. Questions: ${COMPANY.supportEmail}.`,
+  ],
+  [
+    "Do affiliate codes stack with launch pricing?",
+    "Affiliate codes stored from ?ref= links apply an extra discount at Dodo checkout when valid. Launch pricing is shown on the pricing page before checkout.",
+  ],
+  [
+    "Prop firm rules",
+    "Flipur only modifies orders you place; it does not trade for you. Firms differ on extensions and order changes—verify your firm's policy and test on demo or paper first.",
+  ],
 ];
+
+export const platformNotes = {
+  ProjectX: {
+    does: "Flips supported order types on ProjectX web before submit.",
+    doesNot: "Does not bypass firm risk rules or evaluation limits.",
+    firm: "Confirm your prop firm's policy on browser extensions.",
+  },
+  "Delta Exchange": {
+    does: "Flips spot and derivatives order forms we recognise in the browser.",
+    doesNot: "Does not move funds or access API keys.",
+    firm: "You remain responsible for compliance with Delta and local regulations.",
+  },
+  TradingView: {
+    does: "Flips broker-connected order tickets launched from TradingView when supported.",
+    doesNot: "Does not change chart data or provide signals.",
+    firm: "Depends on your connected broker—check their extension policy.",
+  },
+  "Match-Trader": {
+    does: "Flips supported Match-Trader web order flows.",
+    doesNot: "Does not alter server-side brackets beyond mirrored flip logic.",
+    firm: "Verify with your broker or prop desk before live use.",
+  },
+};

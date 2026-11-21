@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAffiliateAuth } from "./AffiliateAuth.jsx";
 
 export function AffiliateLogin() {
-  const { login, firebaseReady } = useAffiliateAuth();
+  const { login } = useAffiliateAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,7 +15,6 @@ export function AffiliateLogin() {
     setError("");
     setBusy(true);
     try {
-      if (!firebaseReady) throw new Error("Firebase is not configured.");
       await login(email, password);
       navigate("/affiliate/dashboard", { replace: true });
     } catch (err) {

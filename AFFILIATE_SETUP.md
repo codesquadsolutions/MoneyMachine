@@ -63,4 +63,4 @@ cd functions && node scripts/seedAffiliates.js
 
 ## Payouts
 
-Commissions are tracked in Firestore. Pay affiliates manually (PayPal, bank, etc.) and mark conversions `paid` in a future admin action (not automated in this MVP).
+Commissions are tracked in Firestore. Pay affiliates manually (PayPal, bank, etc.), then in **Affiliate master → Commission payouts** select conversions and **Mark selected paid**. That sets `affiliateConversions.status` to `paid` so pending balances drop on the affiliate dashboard.

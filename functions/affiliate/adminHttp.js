@@ -38,6 +38,8 @@ function valid(token, password) {
 }
 
 const cors = [
+  "https://flipur-404bd-admin.web.app",
+  "https://flipur-404bd-admin.firebaseapp.com",
   "https://money-machine-247-admin.web.app",
   "https://money-machine-247-admin.firebaseapp.com",
   "https://admin.flipur.trade",
@@ -54,6 +56,9 @@ async function listLeads() {
     instagram: doc.data().instagram || "",
     youtube: doc.data().youtube || "",
     snapchat: doc.data().snapchat || "",
+    linkedin: doc.data().linkedin || "",
+    discord: doc.data().discord || "",
+    telegram: doc.data().telegram || "",
     website: doc.data().website || "",
     note: doc.data().note || "",
     status: doc.data().status || "new",
@@ -105,29 +110,67 @@ async function listAffiliates() {
   return rows;
 }
 
+async function listRecentConversions(limit = 100) {
+  const snap = await getFirestore().collection("affiliateConversions").limit(500).get();
+  const affiliates = new Map();
+  const affSnap = await getFirestore().collection("affiliates").get();
+  for (const doc of affSnap.docs) {
+    affiliates.set(doc.id, doc.data());
+  }
+  const rows = snap.docs.map((doc) => {
+    const row = doc.data();
+    const aff = affiliates.get(row.affiliateId) || {};
+    return {
+      id: doc.id,
+      affiliateId: row.affiliateId || "",
+      affiliateName: aff.displayName || "",
+      affiliateEmail: aff.email || "",
+      couponCode: row.couponCode || aff.couponCode || "",
+      orderId: row.orderId || doc.id,
+      saleAmountCents: Number(row.saleAmountCents) || 0,
+      commissionAmountCents: Number(row.commissionAmountCents) || 0,
+      currency: row.currency || "USD",
+      status: row.status || "pending",
+      eventType: row.eventType || "",
+      orderAt: row.orderAt || iso(row.createdAt),
+      createdAt: iso(row.createdAt),
+    };
+  });
+  rows.sort((a, b) => String(b.createdAt || b.orderAt).localeCompare(String(a.createdAt || a.orderAt)));
+  return rows.slice(0, limit);
+}
+
 async function masterMetrics() {
   const affiliates = await listAffiliates();
   const convSnap = await getFirestore().collection("affiliateConversions").limit(2000).get();
   let totalRevenue = 0;
   let totalCommission = 0;
   let totalConversions = 0;
+  let pendingPayoutCents = 0;
+  let paidCommissionCents = 0;
   for (const doc of convSnap.docs) {
     const row = doc.data();
     if (row.status === "reversed") continue;
     totalConversions += 1;
     totalRevenue += Number(row.saleAmountCents) || 0;
     totalCommission += Number(row.commissionAmountCents) || 0;
+    if (row.status === "paid") paidCommissionCents += Number(row.commissionAmountCents) || 0;
+    else pendingPayoutCents += Number(row.commissionAmountCents) || 0;
   }
   const leads = await listLeads();
+  const conversions = await listRecentConversions(150);
   return {
     totalRevenueCents: totalRevenue,
     totalCommissionCents: totalCommission,
+    pendingPayoutCents,
+    paidCommissionCents,
     totalConversions,
     activeAffiliates: affiliates.filter((a) => a.status === "active").length,
     totalAffiliates: affiliates.length,
     affiliateLeads: leads.filter((l) => l.status === "new" || l.status === "contacted").length,
     affiliates,
     leads,
+    conversions,
   };
 }
 
@@ -188,7 +231,12 @@ async function onboardLead(leadId, fields) {
     instagram: lead.instagram || "",
     youtube: lead.youtube || "",
     snapchat: lead.snapchat || "",
-    socialHandles: [lead.instagram, lead.youtube, lead.snapchat].filter(Boolean).join(" · "),
+    linkedin: lead.linkedin || "",
+    discord: lead.discord || "",
+    telegram: lead.telegram || "",
+    socialHandles: [lead.instagram, lead.youtube, lead.snapchat, lead.linkedin, lead.discord, lead.telegram]
+      .filter(Boolean)
+      .join(" · "),
     website: lead.website || "",
     payoutInfo: "",
     couponCode,
@@ -501,6 +549,34 @@ export const affiliateAdmin = onRequest(
             createdAt: FieldValue.serverTimestamp(),
           });
         res.json(await masterMetrics());
+        return;
+      }
+      if (action === "markConversionsPaid") {
+        const ids = Array.isArray(req.body?.conversionIds)
+          ? req.body.conversionIds.map((id) => String(id || "").trim()).filter(Boolean)
+          : [];
+        if (!ids.length) {
+          res.status(400).json({ error: "conversionIds required." });
+          return;
+        }
+        const db = getFirestore();
+        const batch = db.batch();
+        let updated = 0;
+        for (const id of ids.slice(0, 200)) {
+          const ref = db.collection("affiliateConversions").doc(id);
+          const snap = await ref.get();
+          if (!snap.exists) continue;
+          const status = snap.data().status || "pending";
+          if (status === "reversed" || status === "paid") continue;
+          batch.update(ref, {
+            status: "paid",
+            paidAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          updated += 1;
+        }
+        if (updated) await batch.commit();
+        res.json({ ...(await masterMetrics()), markedPaid: updated });
         return;
       }
       res.status(400).json({ error: "Unknown action." });

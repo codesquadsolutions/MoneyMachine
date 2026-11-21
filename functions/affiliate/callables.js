@@ -40,14 +40,20 @@ export const submitAffiliateInterest = onCall(callableOpts, async (request) => {
   const instagram = String(request.data?.instagram || request.data?.socialHandles || "").trim().slice(0, 200);
   const youtube = String(request.data?.youtube || "").trim().slice(0, 200);
   const snapchat = String(request.data?.snapchat || "").trim().slice(0, 200);
+  const linkedin = String(request.data?.linkedin || "").trim().slice(0, 200);
+  const discord = String(request.data?.discord || "").trim().slice(0, 200);
+  const telegram = String(request.data?.telegram || "").trim().slice(0, 200);
   const website = String(request.data?.website || "").trim().slice(0, 300);
   const note = String(request.data?.note || request.data?.message || "").trim().slice(0, 2000);
 
   if (!displayName || !email) {
     throw new HttpsError("invalid-argument", "Name and email are required.");
   }
-  if (!instagram && !youtube && !snapchat && !website) {
-    throw new HttpsError("invalid-argument", "Share at least one channel or website.");
+  if (!instagram && !youtube && !snapchat && !linkedin && !discord && !telegram) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Share at least one of Instagram, YouTube, Snapchat, LinkedIn, Discord, or Telegram.",
+    );
   }
 
   const existingLead = await db.collection("affiliateLeads").where("email", "==", email).limit(5).get();
@@ -71,6 +77,9 @@ export const submitAffiliateInterest = onCall(callableOpts, async (request) => {
     instagram,
     youtube,
     snapchat,
+    linkedin,
+    discord,
+    telegram,
     website,
     note,
     status: "new",
@@ -260,8 +269,16 @@ export const createCheckoutSession = onCall(
     const discountCode = normalizeCode(request.data?.discountCode || request.data?.ref || "");
     const plan = normalizePlan(request.data?.plan);
     const autoRenew = Boolean(request.data?.autoRenew);
-    const session = await createFlipurCheckoutSession({ email, name, discountCode, plan, autoRenew });
-    return session;
+    try {
+      return await createFlipurCheckoutSession({ email, name, discountCode, plan, autoRenew });
+    } catch (err) {
+      const msg = String(err?.message || err).slice(0, 240);
+      console.error("createCheckoutSession", msg);
+      if (err?.code === "failed-precondition" || msg.includes("not configured")) {
+        throw new HttpsError("failed-precondition", msg || "Checkout is not configured.");
+      }
+      throw new HttpsError("failed-precondition", msg || "Could not start checkout. Try again in a minute.");
+    }
   },
 );
 

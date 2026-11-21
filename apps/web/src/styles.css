@@ -53,7 +53,12 @@ nav.top .w {
   letter-spacing: -0.02em;
 }
 
-.logo img { width: 34px; height: 34px; border-radius: 9px; }
+.logo img {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  image-rendering: -webkit-optimize-contrast;
+}
 
 .logo .mark { color: inherit; }
 .logo .mark span { color: var(--g); }
@@ -262,7 +267,7 @@ h1 em {
   object-fit: contain;
 }
 
-.logo-plate.dark { background: #000; }
+.logo-plate.dark { background: var(--bg2); }
 
 .logo-plate.light { background: #fff; }
 
@@ -304,7 +309,7 @@ h1 em {
 
 section { padding: 84px 0; }
 
-section, #waitlist, #download { scroll-margin-top: 78px; }
+section, #download { scroll-margin-top: 78px; }
 
 h1,
 h2 {
@@ -538,7 +543,7 @@ footer .w { display: flex; flex-wrap: wrap; gap: 16px 28px; justify-content: spa
   height: 740px;
   border: 0;
   border-radius: 18px;
-  background: #05070b;
+  background: var(--bg2);
   display: block;
   margin: 0 auto;
 }
@@ -609,6 +614,40 @@ footer .w { display: flex; flex-wrap: wrap; gap: 16px 28px; justify-content: spa
 .muted { color: var(--m); }
 .ok { color: var(--g); }
 @media (min-width: 900px) { .aff-support-grid { grid-template-columns: 1fr 1fr; } }
+
+.trust-section { padding: 48px 0; border-top: 1px solid var(--line); }
+.trust-section--inline { padding: 28px 0; }
+.trust-title { margin: 0 0 16px; font-size: clamp(22px, 3vw, 32px); }
+.trust-stats { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+.trust-stat { text-align: center; min-width: 120px; }
+.trust-stat b { display: block; font-size: 28px; color: var(--g); }
+.trust-stat span { font-size: 13px; color: var(--m); }
+.trust-grid { display: grid; gap: 16px; grid-template-columns: 1fr; margin-top: 20px; }
+.trust-quote { padding: 20px; margin: 0; }
+.trust-quote p { margin: 0 0 12px; font-size: 16px; line-height: 1.5; }
+.trust-quote cite { font-style: normal; font-weight: 700; }
+.cws-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--t);
+  text-decoration: none;
+  font-size: 14px;
+}
+.cws-badge:hover { border-color: var(--g); color: var(--g); }
+.cws-stars { color: #f5c842; letter-spacing: 2px; }
+.platform-notes { list-style: disc; padding-left: 18px; margin: 10px 0 0; text-align: left; }
+.platform-notes li { margin-bottom: 6px; color: var(--m); }
+.support-list { list-style: none; padding: 0; }
+.support-list li { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.checkout-success .success-steps { margin: 20px 0; padding-left: 20px; color: var(--m); }
+.checkout-success .success-steps li { margin-bottom: 8px; }
+.success-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+@media (min-width: 720px) { .trust-grid { grid-template-columns: repeat(3, 1fr); } }
 
 .pricing-hero { padding-top: 48px; padding-bottom: 8px; }
 .pricing-body { padding-bottom: 84px; }
@@ -713,29 +752,4 @@ footer .w { display: flex; flex-wrap: wrap; gap: 16px 28px; justify-content: spa
 }
 .download-pending code { font-size: 12px; color: var(--g); }
 
-/* BotPenguin — right-rail chat; kept inside viewport (see BotPenguin.jsx for live overrides) */
-#botpenguin-launcher-12,
-[id^="botpenguin-launcher"] {
-  transform: scale(0.92) !important;
-  transform-origin: bottom right !important;
-  right: 16px !important;
-  bottom: 16px !important;
-}
-#BotPenguin-messenger,
-[id*="BotPenguin-messenger"],
-.botpenguin-messenger-widget {
-  width: min(360px, calc(100vw - 32px)) !important;
-  max-width: 360px !important;
-  height: min(575px, calc(100vh - 96px)) !important;
-  max-height: min(78vh, calc(100vh - 96px)) !important;
-  min-height: 420px !important;
-  top: auto !important;
-  right: 16px !important;
-  bottom: 80px !important;
-  left: auto !important;
-  border-radius: 14px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45) !important;
-}
-botpenguin-root {
-  font-size: 14px !important;
-}
+/* Flipur support chat widget — layout tweaks live in SupportChat.jsx if needed */

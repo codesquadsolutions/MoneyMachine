@@ -5,6 +5,7 @@ import { NeonMark } from "./NeonMark";
 import { PlatformBar } from "./PlatformBar";
 import { DownloadForm } from "./DownloadForm";
 import { ADD_TO_CHROME_LABEL, FREE_FLIP_LIMIT } from "../content/download";
+import { ChromeStoreBadge, StatsRow, TestimonialsSection } from "./TrustStrip";
 
 export function Home() {
   const jsonLd = useMemo(() => [buildSoftwareApplicationJsonLd()], []);
@@ -14,12 +15,12 @@ export function Home() {
     <main id="top">
       <div className="w hero">
         <div className="rv">
-          <span className="pill">Chrome extension for traders</span>
+          <span className="pill">Psychological trading software for execution</span>
           <h1>
             Your analysis isn't wrong. <em>Your order placing is.</em>
           </h1>
           <p className="lead">
-            Use Flipur to flip your trade. It sits in your browser and flips the side and order type of every order you place — a buy limit becomes a sell stop at the exact same price. Start with {FREE_FLIP_LIMIT} free flips; one Pro subscription covers every platform your account is connected to.
+            Flipur is built for the gap between what you know and what your finger sends. It flips side and order type in Chrome before the order leaves the browser—same price, opposite intent. Start with {FREE_FLIP_LIMIT} free flips; one Pro subscription covers every platform your account is connected to.
           </p>
           <div className="cta">
             <a className="btn p" href="#download">
@@ -32,6 +33,7 @@ export function Home() {
               See how it works
             </Link>
           </div>
+          <ChromeStoreBadge />
           <DownloadForm />
         </div>
         <div className="vis">
@@ -52,6 +54,12 @@ export function Home() {
         </div>
       </div>
       <PlatformBar />
+      <section className="trust-section trust-section--inline">
+        <div className="w">
+          <StatsRow />
+        </div>
+      </section>
+      <TestimonialsSection />
       <section className="home-links">
         <div className="w">
           <h2 className="home-links-title">Explore Flipur</h2>

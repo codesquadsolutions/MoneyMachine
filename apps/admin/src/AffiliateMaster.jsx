@@ -81,6 +81,8 @@ export function AffiliateMaster({ onSignOut }) {
       <div className="stats pair">
         <Stat label="Revenue (affiliate)" value={money(data?.totalRevenueCents)} />
         <Stat label="Commissions" value={money(data?.totalCommissionCents)} />
+        <Stat label="Pending payout" value={money(data?.pendingPayoutCents)} />
+        <Stat label="Paid out" value={money(data?.paidCommissionCents)} />
         <Stat label="Conversions" value={data?.totalConversions ?? 0} />
         <Stat label="Active affiliates" value={data?.activeAffiliates ?? 0} />
         <Stat label="Open leads" value={data?.affiliateLeads ?? 0} />
@@ -162,6 +164,12 @@ export function AffiliateMaster({ onSignOut }) {
         </table>
       </div>
 
+      <ConversionPayoutSection
+        conversions={data?.conversions || []}
+        busy={busy}
+        onMarkPaid={(ids) => run(() => affiliateAdminRequest("markConversionsPaid", { conversionIds: ids }))}
+      />
+
       <section className="aff-ticket-admin">
         <h2>Support tickets</h2>
         <div className="ticket-grid">
@@ -218,6 +226,102 @@ export function AffiliateMaster({ onSignOut }) {
   );
 }
 
+function ConversionPayoutSection({ conversions, busy, onMarkPaid }) {
+  const [selected, setSelected] = useState(() => new Set());
+  const unpaid = useMemo(
+    () => (conversions || []).filter((c) => c.status === "pending" || c.status === "approved"),
+    [conversions],
+  );
+
+  function toggle(id) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected((prev) => {
+      if (prev.size === unpaid.length) return new Set();
+      return new Set(unpaid.map((c) => c.id));
+    });
+  }
+
+  async function markSelected() {
+    const ids = [...selected];
+    if (!ids.length) return;
+    await onMarkPaid(ids);
+    setSelected(new Set());
+  }
+
+  return (
+    <section className="aff-payouts">
+      <h2 className="aff-section-title">Commission payouts</h2>
+      <p className="note sm">
+        Pay affiliates manually, then mark conversions as paid so dashboards stop counting them as pending.
+      </p>
+      <div className="tools">
+        <button className="btn s sm" type="button" disabled={busy || !unpaid.length} onClick={toggleAll}>
+          {selected.size === unpaid.length && unpaid.length ? "Clear selection" : "Select unpaid"}
+        </button>
+        <button className="btn p sm" type="button" disabled={busy || !selected.size} onClick={markSelected}>
+          Mark selected paid ({selected.size})
+        </button>
+      </div>
+      <div className="tw">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Affiliate</th>
+              <th>Code</th>
+              <th>Order</th>
+              <th>Sale</th>
+              <th>Commission</th>
+              <th>Status</th>
+              <th>When</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(conversions || []).length === 0 ? (
+              <tr className="empty">
+                <td colSpan={8}>No conversions yet.</td>
+              </tr>
+            ) : (
+              (conversions || []).slice(0, 80).map((row) => {
+                const unpaidRow = row.status === "pending" || row.status === "approved";
+                return (
+                  <tr key={row.id}>
+                    <td>
+                      {unpaidRow ? (
+                        <input type="checkbox" checked={selected.has(row.id)} onChange={() => toggle(row.id)} disabled={busy} />
+                      ) : null}
+                    </td>
+                    <td>
+                      {row.affiliateName || "—"}
+                      <div className="sm muted">{row.affiliateEmail}</div>
+                    </td>
+                    <td>{row.couponCode || "—"}</td>
+                    <td className="sm">{row.orderId}</td>
+                    <td>{money(row.saleAmountCents)}</td>
+                    <td>{money(row.commissionAmountCents)}</td>
+                    <td>
+                      <span className={`badge ${row.status}`}>{row.status}</span>
+                    </td>
+                    <td className="sm muted">{row.orderAt || row.createdAt || "—"}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function LeadTable({ leads, busy, onContact, onReject, onOnboard }) {
   if (!leads.length) {
     return <p className="muted sm">No open leads.</p>;
@@ -241,7 +345,15 @@ function LeadTable({ leads, busy, onContact, onReject, onOnboard }) {
               <td>{lead.displayName}</td>
               <td>{lead.email}</td>
               <td className="channels sm">
-                {[lead.instagram && `IG: ${lead.instagram}`, lead.youtube && `YT: ${lead.youtube}`, lead.snapchat && `SC: ${lead.snapchat}`, lead.website]
+                {[
+                  lead.instagram && `IG: ${lead.instagram}`,
+                  lead.youtube && `YT: ${lead.youtube}`,
+                  lead.snapchat && `SC: ${lead.snapchat}`,
+                  lead.linkedin && `LI: ${lead.linkedin}`,
+                  lead.discord && `DC: ${lead.discord}`,
+                  lead.telegram && `TG: ${lead.telegram}`,
+                  lead.website,
+                ]
                   .filter(Boolean)
                   .join(" · ") || "—"}
               </td>
@@ -331,7 +443,8 @@ function OnboardResultModal({ result, onClose }) {
       <div className="card dialog" onClick={(e) => e.stopPropagation()}>
         <h2>Onboarding complete</h2>
         <p className="sm">
-          Email <strong>{result.email}</strong> with coupon <strong>{result.couponCode}</strong> and the reset link below.
+          Email <strong>{result.email}</strong> with coupon <strong>{result.couponCode}</strong> and the temporary
+          password below. They sign in at the partner login page.
         </p>
         <label>
           Share link
@@ -340,18 +453,22 @@ function OnboardResultModal({ result, onClose }) {
         <button className="btn s sm" type="button" onClick={() => copy(result.shareUrl || "")}>
           Copy share link
         </button>
-        {result.resetLink ? (
+        <label>
+          Login URL
+          <input readOnly value={result.loginUrl || ""} onFocus={(e) => e.target.select()} />
+        </label>
+        {result.temporaryPassword ? (
           <>
             <label>
-              Password setup link
-              <input readOnly value={result.resetLink} onFocus={(e) => e.target.select()} />
+              Temporary password
+              <input readOnly value={result.temporaryPassword} onFocus={(e) => e.target.select()} />
             </label>
-            <button className="btn s sm" type="button" onClick={() => copy(result.resetLink)}>
-              Copy reset link
+            <button className="btn s sm" type="button" onClick={() => copy(result.temporaryPassword)}>
+              Copy password
             </button>
           </>
         ) : (
-          <p className="err sm">Reset link could not be generated—use Firebase console → reset password.</p>
+          <p className="err sm">Password was not returned—onboard again or reset from the API.</p>
         )}
         {msg ? <p className="ok sm">{msg}</p> : null}
         <div className="actions">

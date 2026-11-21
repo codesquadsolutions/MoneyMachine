@@ -1,9 +1,8 @@
-import { useEffect } from "react";
-import { BrowserRouter, Link, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Suspense, lazy, useEffect } from "react";
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { SEO, useSeo } from "./seo";
-import { AuthProvider } from "./auth";
 import { Nav } from "./components/Nav";
-import { BotPenguin } from "./components/BotPenguin";
+import { SupportChat } from "./components/SupportChat";
 import { Home } from "./components/Home";
 import { Footer } from "./components/Footer";
 import { Privacy, Terms } from "./components/Legal";
@@ -13,9 +12,13 @@ import { HowItWorksPage } from "./pages/HowItWorksPage";
 import { PlatformsPage } from "./pages/PlatformsPage";
 import { FaqPage } from "./pages/FaqPage";
 import { PricingPage } from "./pages/PricingPage";
-import { AffiliateRoutes } from "./affiliate/AffiliateRoutes.jsx";
 import { CheckoutSuccess } from "./components/CheckoutSuccess.jsx";
+import { AboutPage, BillingPage, SecurityPage, SupportPage } from "./pages/TrustPages.jsx";
 import { captureReferralFromSearch } from "./lib/referral.js";
+
+const AffiliateRoutes = lazy(() =>
+  import("./affiliate/AffiliateRoutes.jsx").then((m) => ({ default: m.AffiliateRoutes })),
+);
 
 const LEGACY_HASH_ROUTES = {
   reel: "/reel",
@@ -83,24 +86,34 @@ function Shell() {
         <Route path="/platforms" element={<PlatformsPage />} />
         <Route path="/faq" element={<FaqPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/security" element={<SecurityPage />} />
+        <Route path="/billing" element={<BillingPage />} />
+        <Route path="/refunds" element={<Navigate to="/billing" replace />} />
+        <Route path="/support" element={<SupportPage />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
-        <Route path="/affiliate/*" element={<AffiliateRoutes />} />
+        <Route
+          path="/affiliate/*"
+          element={
+            <Suspense fallback={<main className="w muted">Loading…</main>}>
+              <AffiliateRoutes />
+            </Suspense>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {!isAffiliate ? <Footer /> : null}
-      <BotPenguin />
+      {!isAffiliate ? <SupportChat /> : null}
     </>
   );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Shell />
-      </BrowserRouter>
-    </AuthProvider>
+    <BrowserRouter>
+      <Shell />
+    </BrowserRouter>
   );
 }
