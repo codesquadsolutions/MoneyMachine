@@ -282,7 +282,40 @@ code {
   border: 1px solid var(--line);
 }
 
-.crm-tools { display: grid; grid-template-columns: 1.6fr repeat(3, minmax(120px, 0.7fr)); gap: 10px; }
+.crm-tools {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.8fr) repeat(3, minmax(140px, 0.85fr));
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.crm-tools input,
+.crm-tools select { margin: 0; }
+
+.seg {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+}
+.seg button {
+  border: 0;
+  background: transparent;
+  color: var(--m);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.seg button.on {
+  background: rgba(0, 245, 155, 0.14);
+  color: var(--g);
+}
 .leads-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -319,45 +352,209 @@ code {
 .activity-item .row { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
 .activity-item span { color: var(--m); font-size: 12px; }
 
+.funnel-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--m);
+  font-size: 13px;
+  font-weight: 600;
+}
+.funnel-hint-grip {
+  width: 18px;
+  height: 14px;
+  border-radius: 4px;
+  background:
+    radial-gradient(circle, var(--m) 1.2px, transparent 1.3px) 0 0 / 6px 6px,
+    radial-gradient(circle, var(--m) 1.2px, transparent 1.3px) 3px 3px / 6px 6px;
+  opacity: 0.7;
+}
+
 .funnel-board {
   display: grid;
   grid-template-columns: repeat(6, minmax(200px, 1fr));
-  gap: 12px;
+  gap: 10px;
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding: 4px 2px 14px;
   scroll-snap-type: x proximity;
+  min-height: calc(100vh - var(--topbar-h) - 170px);
 }
 .funnel-column {
-  min-width: 220px;
+  min-width: 200px;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - var(--topbar-h) - 140px);
+  max-height: calc(100vh - var(--topbar-h) - 170px);
   scroll-snap-align: start;
+  background: linear-gradient(180deg, rgba(23, 29, 42, 0.95), rgba(12, 16, 24, 0.92));
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  overflow: hidden;
 }
+.funnel-column.drop-target {
+  border-color: rgba(0, 245, 155, 0.55);
+  box-shadow: 0 0 0 1px rgba(0, 245, 155, 0.25), 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+.funnel-column.stage-new { border-top: 3px solid #f5c842; }
+.funnel-column.stage-qualified { border-top: 3px solid #b4a7ff; }
+.funnel-column.stage-contacted { border-top: 3px solid #7ad9ff; }
+.funnel-column.stage-invited { border-top: 3px solid #7dffa8; }
+.funnel-column.stage-converted { border-top: 3px solid var(--g); }
+.funnel-column.stage-lost { border-top: 3px solid #ff8f8f; }
+
 .funnel-column-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 10px 8px;
   border-bottom: 1px solid var(--line);
 }
-.funnel-column-head h2 { font-size: 14px; }
-.funnel-column-body {
-  padding: 10px;
+.funnel-column-head h2 { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.funnel-col-sub { display: block; color: var(--m); font-size: 11px; font-weight: 600; margin-top: 1px; }
+.funnel-count {
+  min-width: 22px;
+  height: 22px;
   display: grid;
-  gap: 8px;
-  overflow: auto;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 11px;
 }
+.funnel-column-body {
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 100px;
+}
+.funnel-dropzone {
+  border: 1.5px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 16px 8px;
+  text-align: center;
+  color: var(--m);
+  font-size: 11px;
+  font-weight: 600;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.funnel-dropzone.on,
+.funnel-dropzone.inline.on {
+  border-color: rgba(0, 245, 155, 0.55);
+  background: rgba(0, 245, 155, 0.08);
+  color: var(--g);
+}
+.funnel-dropzone.inline { padding: 8px; }
+
 .funnel-card {
-  padding: 12px;
-  border-radius: 14px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 10px 24px minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: start;
+  padding: 7px 8px;
+  border-radius: 10px;
   background: #0b0e14;
   border: 1px solid var(--line);
-  display: grid;
-  gap: 8px;
+  cursor: grab;
+  user-select: none;
+  min-width: 0;
+  overflow: hidden;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
 }
-.funnel-card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
-.move-label { display: grid; gap: 4px; font-size: 12px; color: var(--m); font-weight: 600; }
+.funnel-card:hover {
+  border-color: rgba(0, 245, 155, 0.28);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.funnel-card:active { cursor: grabbing; }
+.funnel-card.dragging {
+  opacity: 0.45;
+  transform: scale(0.98);
+}
+.funnel-card.busy { opacity: 0.65; pointer-events: none; }
+.funnel-card-grip {
+  display: grid;
+  gap: 2px;
+  align-content: center;
+  padding-top: 6px;
+  opacity: 0.4;
+}
+.funnel-card-grip span {
+  display: block;
+  width: 10px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--m);
+}
+.funnel-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  font-size: 9px;
+  font-weight: 800;
+  color: #031a12;
+  background: linear-gradient(145deg, #7dffb0, var(--g));
+  margin-top: 1px;
+}
+.funnel-card-copy { min-width: 0; overflow: hidden; }
+.funnel-card-copy strong {
+  display: block;
+  font-size: 12px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.funnel-card-copy p {
+  margin: 1px 0 0;
+  font-size: 10px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.funnel-card-meta {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+  margin-top: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+.funnel-card-meta .badge { font-size: 10px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--t);
+  white-space: nowrap;
+}
+.chip.muted { color: var(--m); }
+.funnel-open {
+  align-self: start;
+  margin-top: 1px;
+  padding: 3px 7px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--m);
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.funnel-open:hover { color: var(--g); border-color: rgba(0, 245, 155, 0.35); }
+
 .empty-state {
   margin: 4px 0 2px;
   padding: 18px 16px;
@@ -485,6 +682,7 @@ tr:last-child td { border: 0; }
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .crm-tools { grid-template-columns: 1fr 1fr; }
   .leads-layout.open { grid-template-columns: 1fr; }
+  .funnel-board { min-height: auto; }
   .lead-drawer {
     position: fixed;
     inset: var(--topbar-h) 0 0;
@@ -509,8 +707,14 @@ tr:last-child td { border: 0; }
   .page-head-actions { width: 100%; }
   .page-head-actions .btn,
   .page-head-actions select { flex: 1; min-width: 0; }
-  .funnel-board { grid-auto-flow: column; grid-template-columns: repeat(6, minmax(240px, 78vw)); }
-  .funnel-column { max-height: none; }
+  .funnel-board {
+    grid-auto-flow: column;
+    grid-template-columns: repeat(6, minmax(210px, 78vw));
+    min-height: auto;
+  }
+  .funnel-column { max-height: min(70vh, 640px); }
+  .page-head-actions .seg { width: 100%; justify-content: stretch; }
+  .page-head-actions .seg button { flex: 1; }
 }
 
 @media (max-width: 800px) {
@@ -523,7 +727,7 @@ tr:last-child td { border: 0; }
   .stat b, .kpi b { font-size: 22px; }
   .tools { display: grid; grid-template-columns: 1fr; }
   .tools input, .tools .btn { width: 100%; min-width: 0; }
-  .crm-tools { grid-template-columns: 1fr; }
+  .crm-tools { grid-template-columns: 1fr; padding: 10px; }
   .tw { overflow: visible; }
   table { background: transparent; border: 0; overflow: visible; }
   table, thead, tbody, tr, th, td { display: block; width: 100%; }

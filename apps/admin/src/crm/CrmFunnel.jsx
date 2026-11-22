@@ -1,50 +1,118 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FUNNEL_STAGES, sourceLabel, stageLabel } from "./constants";
+import { FUNNEL_STAGES, sourceLabel } from "./constants";
 import { useCrm } from "./CrmContext";
+
+function initials(lead) {
+  const name = String(lead.name || lead.email || "?").trim();
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function formatTouch(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 export function CrmFunnel() {
   const { leads, moveStage, error, setError, loading } = useCrm();
   const [busyId, setBusyId] = useState("");
   const [typeFilter, setTypeFilter] = useState("customer");
+  const [draggingId, setDraggingId] = useState("");
+  const [overStage, setOverStage] = useState("");
+  const [optimistic, setOptimistic] = useState({}); // leadId -> stage
 
   const columns = useMemo(() => {
     const map = Object.fromEntries(FUNNEL_STAGES.map((s) => [s.id, []]));
     for (const lead of leads) {
       if (typeFilter === "customer" && lead.type === "affiliate_interest") continue;
       if (typeFilter === "affiliate_interest" && lead.type !== "affiliate_interest") continue;
-      const stage = map[lead.stage] ? lead.stage : "new";
+      const stage = optimistic[lead.id] || (map[lead.stage] ? lead.stage : "new");
       map[stage].push(lead);
     }
     return map;
-  }, [leads, typeFilter]);
+  }, [leads, typeFilter, optimistic]);
 
   async function move(lead, stage) {
-    if (lead.stage === stage) return;
+    if (!lead || lead.stage === stage && !optimistic[lead.id]) return;
+    const from = optimistic[lead.id] || lead.stage;
+    if (from === stage) return;
     setBusyId(lead.id);
     setError("");
+    setOptimistic((prev) => ({ ...prev, [lead.id]: stage }));
     try {
-      await moveStage(lead.id, stage, lead.stage);
+      await moveStage(lead.id, stage, from);
+      setOptimistic((prev) => {
+        const next = { ...prev };
+        delete next[lead.id];
+        return next;
+      });
     } catch (err) {
+      setOptimistic((prev) => {
+        const next = { ...prev };
+        delete next[lead.id];
+        return next;
+      });
       setError(err.message || "Could not move lead.");
     } finally {
       setBusyId("");
     }
   }
 
+  function onDragStart(event, lead) {
+    setDraggingId(lead.id);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", lead.id);
+    event.dataTransfer.setData("application/x-flipur-lead", lead.id);
+  }
+
+  function onDragEnd() {
+    setDraggingId("");
+    setOverStage("");
+  }
+
+  function onDragOverColumn(event, stageId) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    if (overStage !== stageId) setOverStage(stageId);
+  }
+
+  function onDropColumn(event, stageId) {
+    event.preventDefault();
+    const id = event.dataTransfer.getData("application/x-flipur-lead") || event.dataTransfer.getData("text/plain");
+    setOverStage("");
+    setDraggingId("");
+    const lead = leads.find((row) => row.id === id);
+    if (lead) move(lead, stageId);
+  }
+
   return (
-    <div className="crm-page">
+    <div className="crm-page funnel-page">
       <div className="page-head">
         <div>
           <h1>Funnel</h1>
-          <p className="note">Move leads through stages. Decisions stay visible on the dashboard.</p>
+          <p className="note">Drag cards between stages. Drop to update the pipeline instantly.</p>
         </div>
         <div className="page-head-actions">
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} aria-label="Funnel type">
-            <option value="customer">Customer funnel</option>
-            <option value="affiliate_interest">Affiliate interest</option>
-            <option value="all">All types</option>
-          </select>
+          <div className="seg">
+            {[
+              ["customer", "Customers"],
+              ["affiliate_interest", "Affiliates"],
+              ["all", "All"],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={typeFilter === id ? "on" : undefined}
+                onClick={() => setTypeFilter(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <Link className="btn s" to="/leads">
             Leads list
           </Link>
@@ -54,49 +122,88 @@ export function CrmFunnel() {
       {error ? <p className="err">{error}</p> : null}
       {loading && !leads.length ? <p className="note">Loading funnel…</p> : null}
 
-      <div className="funnel-board">
-        {FUNNEL_STAGES.map((stage) => (
-          <section key={stage.id} className="funnel-column card">
-            <header className="funnel-column-head">
-              <h2>{stage.label}</h2>
-              <b>{columns[stage.id]?.length || 0}</b>
-            </header>
-            <div className="funnel-column-body">
-              {(columns[stage.id] || []).length === 0 ? (
-                <p className="empty-state tight">Empty</p>
-              ) : (
-                (columns[stage.id] || []).map((lead) => (
-                  <article key={lead.id} className="funnel-card">
-                    <div className="funnel-card-top">
-                      <strong>{lead.name || lead.email || lead.phone || "Lead"}</strong>
-                      <span className={`badge source-${lead.source}`}>{sourceLabel(lead.source)}</span>
-                    </div>
-                    <p className="muted sm">{lead.email || lead.phone}</p>
-                    {lead.utmCampaign ? <p className="muted sm">{lead.utmCampaign}</p> : null}
-                    <label className="move-label">
-                      Move to
-                      <select
-                        value={lead.stage}
-                        disabled={busyId === lead.id}
-                        onChange={(e) => move(lead, e.target.value)}
-                        aria-label={`Move ${lead.email || lead.name}`}
+      <div className="funnel-hint" aria-hidden="true">
+        <span className="funnel-hint-grip" />
+        Drag a lead card into another column to change stage
+      </div>
+
+      <div className="funnel-board" role="list">
+        {FUNNEL_STAGES.map((stage) => {
+          const rows = columns[stage.id] || [];
+          const isOver = overStage === stage.id;
+          return (
+            <section
+              key={stage.id}
+              className={`funnel-column card stage-${stage.id}${isOver ? " drop-target" : ""}`}
+              onDragOver={(e) => onDragOverColumn(e, stage.id)}
+              onDragLeave={() => {
+                if (overStage === stage.id) setOverStage("");
+              }}
+              onDrop={(e) => onDropColumn(e, stage.id)}
+            >
+              <header className="funnel-column-head">
+                <div>
+                  <h2>{stage.label}</h2>
+                  <span className="funnel-col-sub">{rows.length} lead{rows.length === 1 ? "" : "s"}</span>
+                </div>
+                <b className="funnel-count">{rows.length}</b>
+              </header>
+
+              <div className="funnel-column-body">
+                {rows.length === 0 ? (
+                  <div className={`funnel-dropzone${isOver ? " on" : ""}`}>
+                    {isOver ? "Drop here" : "Drop leads here"}
+                  </div>
+                ) : (
+                  rows.map((lead) => {
+                    const dragging = draggingId === lead.id;
+                    const busy = busyId === lead.id;
+                    return (
+                      <article
+                        key={lead.id}
+                        className={`funnel-card${dragging ? " dragging" : ""}${busy ? " busy" : ""}`}
+                        draggable={!busy}
+                        onDragStart={(e) => onDragStart(e, lead)}
+                        onDragEnd={onDragEnd}
+                        role="listitem"
                       >
-                        {FUNNEL_STAGES.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {stageLabel(s.id)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <Link className="btn s sm" to={`/leads?id=${encodeURIComponent(lead.id)}`}>
-                      Open
-                    </Link>
-                  </article>
-                ))
-              )}
-            </div>
-          </section>
-        ))}
+                        <div className="funnel-card-grip" aria-hidden="true" title="Drag">
+                          <span />
+                          <span />
+                        </div>
+                        <div className="funnel-avatar" aria-hidden="true">
+                          {initials(lead)}
+                        </div>
+                        <div className="funnel-card-copy">
+                          <strong title={lead.name || lead.email || ""}>
+                            {lead.name || lead.email || lead.phone || "Lead"}
+                          </strong>
+                          <p className="muted" title={lead.email || lead.phone || ""}>
+                            {lead.email || lead.phone || "No contact"}
+                          </p>
+                          <div className="funnel-card-meta">
+                            <span className={`badge source-${lead.source}`}>{sourceLabel(lead.source)}</span>
+                            {lead.lastTouchAt ? <span className="chip muted">{formatTouch(lead.lastTouchAt)}</span> : null}
+                          </div>
+                        </div>
+                        <Link
+                          className="funnel-open"
+                          to={`/leads?id=${encodeURIComponent(lead.id)}`}
+                          onClick={(e) => e.stopPropagation()}
+                          draggable={false}
+                          title="Open lead"
+                        >
+                          Open
+                        </Link>
+                      </article>
+                    );
+                  })
+                )}
+                {rows.length > 0 && isOver ? <div className="funnel-dropzone on inline">Drop to move here</div> : null}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );

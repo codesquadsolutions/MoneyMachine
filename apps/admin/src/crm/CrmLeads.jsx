@@ -113,8 +113,12 @@ export function CrmLeads() {
 
       {error ? <p className="err">{error}</p> : null}
 
-      <div className="tools crm-tools">
-        <input placeholder="Search name, email, phone, campaign" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="crm-tools" role="search">
+        <input
+          placeholder="Search name, email, phone, campaign"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
         <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} aria-label="Source filter">
           <option value="all">All sources</option>
           {LEAD_SOURCES.map((s) => (
