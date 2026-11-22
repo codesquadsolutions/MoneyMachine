@@ -1,10 +1,10 @@
-# Flipur API on VPS (pm2 + Postgres + Traefik)
+# Flipur API on VPS (Docker Compose + Postgres + Traefik)
 
-Commands captured from the production setup on the Hostinger VPS (Ubuntu, existing Node/pm2/Postgres/Docker Traefik). **Do not reuse other projects’ DBs or ports.**
+Hostinger Ubuntu `srv1178699`. Flipur runs as a **Docker Compose** service. pm2 on this box is for **other** apps (`nelaa-api`, `stcs-api`) — do not use it for Flipur. **Do not reuse other projects’ DBs or ports.**
 
 Canonical public URL: **https://api.flipur.trade**
 
-Also see [ARCHITECTURE.md](./ARCHITECTURE.md) and [../api/README.md](../api/README.md).
+Also see [ARCHITECTURE.md](./ARCHITECTURE.md) and [../api/README.md](../api/README.md). Daily commands are also in the repo [README](../README.md).
 
 ---
 
@@ -12,12 +12,13 @@ Also see [ARCHITECTURE.md](./ARCHITECTURE.md) and [../api/README.md](../api/READ
 
 | Item | Value |
 |------|--------|
-| App folder | `/var/www/flipur-api` (or `/var/www/flipur/api` if you nested under a repo clone) |
-| pm2 process | `flipur-api` |
-| Host listen port | **8082** (3000/4000/4001 were already taken) |
-| Postgres | DB `flipur`, role `flipur`, localhost `5432` |
-| Public routing | Traefik → Docker `flipur-api-proxy` (nginx) → `host.docker.internal:8082` |
-| Health | `curl https://api.flipur.trade/health` |
+| App folder | `/var/www/flipur` (git clone; API is `api/`) |
+| Process | Docker **`flipur-api`** in `/root/docker-compose.yml` (project `root`) |
+| Container | `root-flipur-api-1` (`node:20`) |
+| Host listen port | **32780** → container **8082** |
+| Postgres | DB `flipur`, role `flipur`, host `5432` |
+| Public routing | Traefik (`root-traefik-1`) → `Host(api.flipur.trade)` |
+| Health | `curl https://api.flipur.trade/health` or `curl http://127.0.0.1:32780/health` |
 
 ---
 
@@ -203,21 +204,35 @@ pm2 restart flipur-api
 pm2 jlist | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const p=JSON.parse(d).find(x=>x.name==='flipur-api'); console.log((p&&p.pm2_env&&p.pm2_env.pm_cwd)||'')})"
 ```
 
-### Redeploy API code
-
-```powershell
-# from PC
-scp -r D:\Sharath\MoneyMachine\api\* root@YOUR_VPS_IP:/var/www/flipur-api/
-```
+### Redeploy API code (every time)
 
 ```bash
 # on VPS
-cd /var/www/flipur-api
-npm ci --omit=dev
-pm2 restart flipur-api
-curl http://127.0.0.1:8082/health
-curl -s https://api.flipur.trade/health
+cd /var/www/flipur
+git pull
+
+cd /root
+docker compose restart flipur-api
+docker compose logs --tail=80 flipur-api
+
+curl -sS http://127.0.0.1:32780/health
+curl -sS https://api.flipur.trade/health
 ```
+
+From Windows instead of `git pull`:
+
+```powershell
+scp -r D:\Sharath\MoneyMachine\api\* root@31.97.207.229:/var/www/flipur/api/
+```
+
+If `package.json` changed:
+
+```bash
+cd /root
+docker compose up -d --force-recreate flipur-api
+```
+
+Always pass the service name **`flipur-api`**. Do not run a bare `docker compose up`.
 
 ---
 

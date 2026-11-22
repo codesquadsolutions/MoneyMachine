@@ -25,7 +25,7 @@ export function dodoApiConfigured() {
 }
 
 /** @returns {Promise<string|null>} discount id */
-export async function ensureDodoDiscount({ code, affiliateId, commissionBps }) {
+export async function ensureDodoDiscount({ code, affiliateId, commissionBps, required = false }) {
   const client = dodoClient();
   if (!client) return null;
   const normalized = String(code).toUpperCase();
@@ -45,6 +45,11 @@ export async function ensureDodoDiscount({ code, affiliateId, commissionBps }) {
     return created.discount_id || created.id || null;
   } catch (err) {
     console.error("dodo.discounts.create failed", err.message || err);
+    if (required) {
+      const error = new Error("Could not create the affiliate coupon in Dodo Payments. Try again after resolving the Dodo error.");
+      error.code = "dodo_discount_create_failed";
+      throw error;
+    }
     return null;
   }
 }

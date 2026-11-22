@@ -23,6 +23,61 @@ body {
 
 a { color: inherit; text-decoration: none; }
 
+.floating-socials {
+  position: fixed;
+  z-index: 8;
+  top: 50%;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translateY(-50%);
+}
+
+.floating-socials a {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: var(--m);
+  background: rgba(18, 23, 34, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.24);
+  transition: color 0.18s, border-color 0.18s, background 0.18s, transform 0.18s;
+}
+
+.floating-socials a:hover,
+.floating-socials a:focus-visible {
+  color: var(--g);
+  background: var(--bg2);
+  border-color: rgba(0, 245, 155, 0.45);
+  transform: translateX(-3px);
+}
+
+.floating-socials a:focus-visible { outline: 2px solid var(--g); outline-offset: 3px; }
+.floating-socials svg { width: 18px; height: 18px; fill: currentColor; }
+
+@media (max-width: 640px) {
+  .floating-socials {
+    top: 50%;
+    right: auto;
+    left: 0;
+    gap: 8px;
+    transform: translateY(-50%);
+  }
+
+  .floating-socials { flex-direction: column; }
+  .floating-socials a {
+    width: 38px;
+    height: 38px;
+    border-left: 0;
+    border-radius: 0 50% 50% 0;
+  }
+  .floating-socials a:hover,
+  .floating-socials a:focus-visible { transform: translateX(3px); }
+}
+
 button, select, input { font: inherit; color: inherit; }
 
 .w { max-width: 1120px; margin: 0 auto; padding: 0 22px; }

@@ -37,6 +37,55 @@ export function extractCouponCode(event) {
   return "";
 }
 
+function customerDetails(event) {
+  const data = event?.data || {};
+  const customer = data.customer || data.customer_details || {};
+  return {
+    email: String(customer.email || data.customer_email || data.email || "").slice(0, 320),
+    name: String(customer.name || data.customer_name || data.name || "").slice(0, 240),
+  };
+}
+
+async function recordPayment(event, webhookId, affiliateId = null) {
+  const type = String(event?.type || "");
+  const paymentId = String(extractOrderKey(event) || webhookId || "");
+  if (!paymentId) return null;
+  const data = event?.data || {};
+  const customer = customerDetails(event);
+  const paidAt = event?.timestamp || data.created_at || data.order_date || new Date().toISOString();
+  await query(
+    `INSERT INTO payment_records (
+      id, subscription_id, customer_email, customer_name, amount_cents, currency, status,
+      event_type, coupon_code, affiliate_id, paid_at
+    ) VALUES ($1,$2,$3,$4,$5,$6,'paid',$7,$8,$9,$10)
+    ON CONFLICT (id) DO UPDATE SET
+      subscription_id = EXCLUDED.subscription_id,
+      customer_email = COALESCE(NULLIF(EXCLUDED.customer_email, ''), payment_records.customer_email),
+      customer_name = COALESCE(NULLIF(EXCLUDED.customer_name, ''), payment_records.customer_name),
+      amount_cents = EXCLUDED.amount_cents,
+      currency = EXCLUDED.currency,
+      status = 'paid',
+      event_type = EXCLUDED.event_type,
+      coupon_code = COALESCE(NULLIF(EXCLUDED.coupon_code, ''), payment_records.coupon_code),
+      affiliate_id = COALESCE(EXCLUDED.affiliate_id, payment_records.affiliate_id),
+      paid_at = EXCLUDED.paid_at,
+      updated_at = NOW()`,
+    [
+      paymentId,
+      String(data.subscription_id || ""),
+      customer.email,
+      customer.name,
+      extractAmountCents(event),
+      data.currency || "USD",
+      type,
+      extractCouponCode(event),
+      affiliateId,
+      paidAt,
+    ],
+  );
+  return paymentId;
+}
+
 export async function lookupAffiliateByCode(code) {
   const normalized = normalizeCode(code);
   if (!normalized) return null;
@@ -67,10 +116,10 @@ export async function processAffiliateSale(event, webhookId) {
   }
 
   const couponCode = extractCouponCode(event);
-  if (!couponCode) return { skipped: true, reason: "no_coupon" };
-
-  const affiliate = await lookupAffiliateByCode(couponCode);
-  if (!affiliate) return { skipped: true, reason: "unknown_coupon" };
+  const affiliate = couponCode ? await lookupAffiliateByCode(couponCode) : null;
+  const paymentId = await recordPayment(event, webhookId, affiliate?.id || null);
+  if (!couponCode) return { ok: true, paymentId, reason: "no_coupon" };
+  if (!affiliate) return { ok: true, paymentId, reason: "unknown_coupon" };
 
   const orderKey = String(extractOrderKey(event) || webhookId || "");
   if (!orderKey) return { skipped: true, reason: "no_order_id" };
@@ -114,6 +163,10 @@ async function reverseConversion(event, webhookId) {
     event?.data?.subscription_id ||
     "";
   if (!paymentId) return { skipped: true, reason: "no_payment_for_reversal" };
+  await query(
+    `UPDATE payment_records SET status = 'refunded', event_type = $2, updated_at = NOW() WHERE id = $1`,
+    [String(paymentId), String(event?.type || "refund.succeeded")],
+  );
   const result = await query(
     `UPDATE affiliate_conversions
      SET status = 'reversed', updated_at = NOW()

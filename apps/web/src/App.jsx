@@ -3,6 +3,7 @@ import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate 
 import { SEO, useSeo } from "./seo";
 import { Nav } from "./components/Nav";
 import { SupportChat } from "./components/SupportChat";
+import { FloatingSocialLinks } from "./components/FloatingSocialLinks";
 import { Home } from "./components/Home";
 import { Footer } from "./components/Footer";
 import { Privacy, Terms } from "./components/Legal";
@@ -108,6 +109,7 @@ function Shell() {
       </Routes>
       {!isAffiliate ? <Footer /> : null}
       {!isAffiliate ? <SupportChat /> : null}
+      {!isAffiliate ? <FloatingSocialLinks /> : null}
     </>
   );
 }

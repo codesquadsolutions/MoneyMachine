@@ -103,6 +103,40 @@ export async function migrate() {
     CREATE INDEX IF NOT EXISTS affiliate_conversions_affiliate_idx ON affiliate_conversions (affiliate_id);
     CREATE INDEX IF NOT EXISTS affiliate_conversions_status_idx ON affiliate_conversions (status);
 
+    CREATE TABLE IF NOT EXISTS payment_records (
+      id TEXT PRIMARY KEY,
+      subscription_id TEXT NOT NULL DEFAULT '',
+      customer_email TEXT NOT NULL DEFAULT '',
+      customer_name TEXT NOT NULL DEFAULT '',
+      amount_cents INTEGER NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      status TEXT NOT NULL DEFAULT 'paid',
+      event_type TEXT NOT NULL DEFAULT '',
+      coupon_code TEXT NOT NULL DEFAULT '',
+      affiliate_id TEXT REFERENCES affiliates(id) ON DELETE SET NULL,
+      paid_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS payment_records_paid_at_idx ON payment_records (paid_at DESC);
+    CREATE INDEX IF NOT EXISTS payment_records_affiliate_idx ON payment_records (affiliate_id);
+
+    CREATE TABLE IF NOT EXISTS affiliate_link_opens (
+      id TEXT PRIMARY KEY,
+      affiliate_id TEXT NOT NULL REFERENCES affiliates(id) ON DELETE CASCADE,
+      visitor_key TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    ALTER TABLE affiliate_link_opens ADD COLUMN IF NOT EXISTS visitor_key TEXT NOT NULL DEFAULT '';
+
+    CREATE INDEX IF NOT EXISTS affiliate_link_opens_affiliate_created_idx
+      ON affiliate_link_opens (affiliate_id, created_at);
+    DROP INDEX IF EXISTS affiliate_link_opens_unique_visitor_idx;
+    CREATE INDEX IF NOT EXISTS affiliate_link_opens_visitor_idx
+      ON affiliate_link_opens (affiliate_id, visitor_key);
+
     CREATE TABLE IF NOT EXISTS affiliate_tickets (
       id TEXT PRIMARY KEY,
       affiliate_id TEXT NOT NULL REFERENCES affiliates(id) ON DELETE CASCADE,

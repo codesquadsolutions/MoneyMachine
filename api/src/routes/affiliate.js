@@ -22,6 +22,38 @@ function normalizeEmail(email) {
     .toLowerCase();
 }
 
+router.post("/open", async (req, res) => {
+  try {
+    const code = normalizeCode(req.body?.code);
+    const visitorKey = String(req.body?.visitorKey || "").trim();
+    if (!code) throw httpError(400, "Referral code is required.");
+    if (!/^[a-zA-Z0-9_-]{16,100}$/.test(visitorKey)) {
+      throw httpError(400, "A valid visitor identifier is required.");
+    }
+
+    const { rows } = await query(
+      `SELECT a.id
+       FROM affiliates a
+       LEFT JOIN affiliate_codes c ON c.affiliate_id = a.id AND c.code = $1
+       WHERE a.coupon_code = $1 OR c.code = $1
+       LIMIT 1`,
+      [code],
+    );
+    if (!rows[0]) {
+      res.json({ ok: true, recorded: false });
+      return;
+    }
+    await query(
+      `INSERT INTO affiliate_link_opens (id, affiliate_id, visitor_key)
+       VALUES ($1, $2, $3)`,
+      [newId(), rows[0].id, visitorKey],
+    );
+    res.json({ ok: true, recorded: true });
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
 router.post("/interest", async (req, res) => {
   try {
     const displayName = String(req.body?.displayName || "").trim().slice(0, 120);
@@ -132,6 +164,14 @@ router.post("/dashboard", async (req, res) => {
       `SELECT * FROM affiliate_conversions WHERE affiliate_id = $1 ORDER BY created_at DESC LIMIT 200`,
       [profile.id],
     );
+    const linkOpens = await query(
+      `SELECT
+         COUNT(*)::INTEGER AS lifetime,
+         COUNT(*) FILTER (WHERE created_at >= to_timestamp($2 / 1000.0) AND created_at <= to_timestamp($3 / 1000.0))::INTEGER AS in_range
+       FROM affiliate_link_opens
+       WHERE affiliate_id = $1`,
+      [profile.id, bounds.start, bounds.end],
+    );
 
     const conversions = [];
     let lifetimeEarnings = 0;
@@ -190,6 +230,8 @@ router.post("/dashboard", async (req, res) => {
         rangeEarningsCents: rangeEarnings,
         rangeConversions: rangeCount,
         totalConversions: conversions.filter((c) => c.status !== "reversed").length,
+        rangeLinkOpens: Number(linkOpens.rows[0]?.in_range) || 0,
+        totalLinkOpens: Number(linkOpens.rows[0]?.lifetime) || 0,
       },
       conversions,
       tickets,

@@ -26,11 +26,12 @@ Browser
   ├─ apps/admin   → Firebase Hosting admin target
   └─ both call    → VITE_API_BASE = https://api.flipur.trade
 
-VPS (Hostinger / srv…)
-  ├─ Postgres DB `flipur` (user `flipur`)
-  ├─ Node Express `api/` via pm2 name `flipur-api` (host port **8082**)
-  └─ Traefik → Docker nginx proxy → host.docker.internal:8082
-       Host(`api.flipur.trade`) + TLS
+VPS (Hostinger srv1178699)
+  ├─ Postgres DB `flipur` (user `flipur`) on the host
+  ├─ Docker Compose `/root/docker-compose.yml` → service `flipur-api`
+  │    container `root-flipur-api-1`, code `/var/www/flipur/api`
+  │    host **32780** → container **8082**
+  └─ Traefik (`root-traefik-1`) → Host(`api.flipur.trade`) + TLS
 ```
 
 | Layer | Tech | Notes |

@@ -112,6 +112,8 @@ export function AffiliateDashboard() {
             <Metric label="Lifetime earnings" value={money(metrics?.totalLifetimeEarningsCents)} />
             <Metric label="Pending payout" value={money(metrics?.pendingPayoutCents)} />
             <Metric label="Conversions (range)" value={metrics?.rangeConversions ?? "—"} />
+            <Metric label="Link opens (range)" value={metrics?.rangeLinkOpens ?? "—"} />
+            <Metric label="Link opens (lifetime)" value={metrics?.totalLinkOpens ?? "—"} />
             <Metric label="Commission rate" value={bpsToPercent(profile?.commissionRateBps)} />
           </div>
           <section className="card aff-ref">

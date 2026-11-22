@@ -95,6 +95,8 @@ export function AffiliateMaster({ onSignOut, embedded = false }) {
         <Stat label="Pending payout" value={money(data?.pendingPayoutCents)} />
         <Stat label="Paid out" value={money(data?.paidCommissionCents)} />
         <Stat label="Conversions" value={data?.totalConversions ?? 0} />
+        <Stat label="Paid customers" value={data?.paidCustomers ?? 0} />
+        <Stat label="Revenue (all payments)" value={money(data?.paidRevenueCents)} />
         <Stat label="Active affiliates" value={data?.activeAffiliates ?? 0} />
         <Stat label="Open leads" value={data?.affiliateLeads ?? 0} />
       </div>
@@ -190,6 +192,8 @@ export function AffiliateMaster({ onSignOut, embedded = false }) {
         busy={busy}
         onMarkPaid={(ids) => run(() => affiliateAdminRequest("markConversionsPaid", { conversionIds: ids }))}
       />
+
+      <PaymentCustomersSection payments={data?.payments || []} />
 
       <section className="aff-panel">
         <div className="aff-panel-head">
@@ -348,6 +352,52 @@ function ConversionPayoutSection({ conversions, busy, onMarkPaid }) {
                   </tr>
                 );
               })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function PaymentCustomersSection({ payments }) {
+  return (
+    <section className="aff-panel">
+      <div className="aff-panel-head">
+        <div>
+          <h2>Paid customers</h2>
+          <p className="note sm">Confirmed Dodo payments, including purchases without an affiliate referral.</p>
+        </div>
+      </div>
+      <div className="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Payment</th>
+              <th>Amount</th>
+              <th>Affiliate</th>
+              <th>Status</th>
+              <th>When</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.length === 0 ? (
+              <tr className="empty"><td colSpan={6}>No confirmed payments yet.</td></tr>
+            ) : (
+              payments.map((row) => (
+                <tr key={row.id}>
+                  <td data-label="Customer">
+                    {row.customerName || "—"}
+                    <div className="sm muted">{row.customerEmail || "Email unavailable"}</div>
+                  </td>
+                  <td className="sm" data-label="Payment">{row.id}</td>
+                  <td data-label="Amount">{money(row.amountCents)}</td>
+                  <td data-label="Affiliate">{row.affiliateName || row.couponCode || "—"}</td>
+                  <td data-label="Status"><span className={`badge ${row.status}`}>{row.status}</span></td>
+                  <td className="sm muted" data-label="When">{row.paidAt || "—"}</td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>

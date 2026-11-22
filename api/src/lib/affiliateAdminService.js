@@ -111,9 +111,38 @@ async function listRecentConversions(limit = 150) {
   }));
 }
 
+async function listRecentPayments(limit = 150) {
+  const { rows } = await query(
+    `SELECT p.*, a.display_name AS affiliate_name
+     FROM payment_records p
+     LEFT JOIN affiliates a ON a.id = p.affiliate_id
+     ORDER BY p.paid_at DESC NULLS LAST, p.created_at DESC
+     LIMIT $1`,
+    [limit],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    subscriptionId: row.subscription_id || "",
+    customerEmail: row.customer_email || "",
+    customerName: row.customer_name || "",
+    amountCents: Number(row.amount_cents) || 0,
+    currency: row.currency || "USD",
+    status: row.status || "paid",
+    eventType: row.event_type || "",
+    couponCode: row.coupon_code || "",
+    affiliateName: row.affiliate_name || "",
+    paidAt: iso(row.paid_at) || iso(row.created_at),
+  }));
+}
+
 async function masterMetrics() {
   const affiliates = await listAffiliates();
   const { rows } = await query(`SELECT * FROM affiliate_conversions LIMIT 2000`);
+  const paymentTotals = await query(
+    `SELECT COUNT(*) FILTER (WHERE status = 'paid')::INTEGER AS paid_customers,
+            COALESCE(SUM(amount_cents) FILTER (WHERE status = 'paid'), 0)::INTEGER AS paid_revenue
+     FROM payment_records`,
+  );
   let totalRevenue = 0;
   let totalCommission = 0;
   let totalConversions = 0;
@@ -134,12 +163,15 @@ async function masterMetrics() {
     pendingPayoutCents,
     paidCommissionCents,
     totalConversions,
+    paidCustomers: Number(paymentTotals.rows[0]?.paid_customers) || 0,
+    paidRevenueCents: Number(paymentTotals.rows[0]?.paid_revenue) || 0,
     activeAffiliates: affiliates.filter((a) => a.status === "active").length,
     totalAffiliates: affiliates.length,
     affiliateLeads: leads.filter((l) => l.status === "new" || l.status === "contacted").length,
     affiliates,
     leads,
     conversions: await listRecentConversions(150),
+    payments: await listRecentPayments(150),
   };
 }
 
@@ -204,6 +236,10 @@ async function onboardLead(leadId, fields) {
     .filter(Boolean)
     .join(" · ");
 
+  if (activateNow && dodoApiConfigured()) {
+    await ensureDodoDiscount({ code: couponCode, affiliateId, commissionBps: commissionRateBps, required: true });
+  }
+
   await query(
     `INSERT INTO affiliates (
       id, email, password_hash, display_name, instagram, youtube, snapchat, linkedin, discord, telegram,
@@ -243,10 +279,6 @@ async function onboardLead(leadId, fields) {
     [leadId, affiliateId],
   );
 
-  if (activateNow && dodoApiConfigured()) {
-    await ensureDodoDiscount({ code: couponCode, affiliateId, commissionBps: commissionRateBps });
-  }
-
   return {
     email,
     couponCode,
@@ -264,18 +296,19 @@ async function approveAffiliate(affiliateId) {
     error.status = 404;
     throw error;
   }
-  await query(
-    `UPDATE affiliates SET status = 'active', approved_at = COALESCE(approved_at, NOW()), updated_at = NOW() WHERE id = $1`,
-    [affiliateId],
-  );
-  await query(`UPDATE affiliate_codes SET active = TRUE, updated_at = NOW() WHERE code = $1`, [aff.coupon_code]);
   if (dodoApiConfigured()) {
     await ensureDodoDiscount({
       code: aff.coupon_code,
       affiliateId,
       commissionBps: aff.commission_rate_bps || 1500,
+      required: true,
     });
   }
+  await query(
+    `UPDATE affiliates SET status = 'active', approved_at = COALESCE(approved_at, NOW()), updated_at = NOW() WHERE id = $1`,
+    [affiliateId],
+  );
+  await query(`UPDATE affiliate_codes SET active = TRUE, updated_at = NOW() WHERE code = $1`, [aff.coupon_code]);
 }
 
 async function updateAffiliate(affiliateId, fields) {
@@ -306,15 +339,20 @@ async function updateAffiliate(affiliateId, fields) {
         error.status = 409;
         throw error;
       }
-      await query(`DELETE FROM affiliate_codes WHERE code = $1`, [couponCode]);
       couponCode = next;
-      await query(
-        `INSERT INTO affiliate_codes (code, affiliate_id, active) VALUES ($1,$2,$3)`,
-        [couponCode, affiliateId, status === "active"],
-      );
     }
   }
 
+  if (status === "active" && dodoApiConfigured()) {
+    await ensureDodoDiscount({ code: couponCode, affiliateId, commissionBps: commissionRateBps, required: true });
+  }
+  if (couponCode !== snap.coupon_code) {
+    await query(`DELETE FROM affiliate_codes WHERE code = $1`, [snap.coupon_code]);
+    await query(
+      `INSERT INTO affiliate_codes (code, affiliate_id, active) VALUES ($1,$2,$3)`,
+      [couponCode, affiliateId, status === "active"],
+    );
+  }
   await query(
     `UPDATE affiliates SET coupon_code = $2, commission_rate_bps = $3, status = $4, updated_at = NOW() WHERE id = $1`,
     [affiliateId, couponCode, commissionRateBps, status],
@@ -324,9 +362,6 @@ async function updateAffiliate(affiliateId, fields) {
     status === "active",
   ]);
 
-  if (status === "active" && dodoApiConfigured()) {
-    await ensureDodoDiscount({ code: couponCode, affiliateId, commissionBps: commissionRateBps });
-  }
   return { ok: true };
 }
 
