@@ -119,6 +119,9 @@ export async function migrate() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    ALTER TABLE payment_records ADD COLUMN IF NOT EXISTS purchase_type TEXT NOT NULL DEFAULT 'one_time';
+    ALTER TABLE payment_records ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT '';
+
     CREATE INDEX IF NOT EXISTS payment_records_paid_at_idx ON payment_records (paid_at DESC);
     CREATE INDEX IF NOT EXISTS payment_records_affiliate_idx ON payment_records (affiliate_id);
 

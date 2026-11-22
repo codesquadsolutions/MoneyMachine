@@ -95,7 +95,8 @@ export function AffiliateMaster({ onSignOut, embedded = false }) {
         <Stat label="Pending payout" value={money(data?.pendingPayoutCents)} />
         <Stat label="Paid out" value={money(data?.paidCommissionCents)} />
         <Stat label="Conversions" value={data?.totalConversions ?? 0} />
-        <Stat label="Paid customers" value={data?.paidCustomers ?? 0} />
+        <Stat label="Confirmed payments" value={data?.paidCustomers ?? 0} />
+        <Stat label="Active subscribers" value={data?.activeSubscribers ?? 0} />
         <Stat label="Revenue (all payments)" value={money(data?.paidRevenueCents)} />
         <Stat label="Active affiliates" value={data?.activeAffiliates ?? 0} />
         <Stat label="Open leads" value={data?.affiliateLeads ?? 0} />
@@ -376,6 +377,7 @@ function PaymentCustomersSection({ payments }) {
               <th>Customer</th>
               <th>Payment</th>
               <th>Amount</th>
+              <th>Type</th>
               <th>Affiliate</th>
               <th>Status</th>
               <th>When</th>
@@ -383,7 +385,7 @@ function PaymentCustomersSection({ payments }) {
           </thead>
           <tbody>
             {payments.length === 0 ? (
-              <tr className="empty"><td colSpan={6}>No confirmed payments yet.</td></tr>
+              <tr className="empty"><td colSpan={7}>No confirmed payments yet.</td></tr>
             ) : (
               payments.map((row) => (
                 <tr key={row.id}>
@@ -393,6 +395,10 @@ function PaymentCustomersSection({ payments }) {
                   </td>
                   <td className="sm" data-label="Payment">{row.id}</td>
                   <td data-label="Amount">{money(row.amountCents)}</td>
+                  <td data-label="Type">
+                    {row.purchaseType === "subscription" ? "Subscription" : "One-time"}
+                    {row.subscriptionStatus ? <div className="sm muted">{row.subscriptionStatus}</div> : null}
+                  </td>
                   <td data-label="Affiliate">{row.affiliateName || row.couponCode || "—"}</td>
                   <td data-label="Status"><span className={`badge ${row.status}`}>{row.status}</span></td>
                   <td className="sm muted" data-label="When">{row.paidAt || "—"}</td>

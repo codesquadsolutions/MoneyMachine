@@ -1,10 +1,13 @@
 import { query } from "../db.js";
 import { commissionFromSale, normalizeCode } from "./util.js";
 
-const COMMISSION_EVENTS = new Set([
-  "payment.succeeded",
+const PAYMENT_EVENTS = new Set(["payment.succeeded", "subscription.renewed"]);
+const SUBSCRIPTION_EVENTS = new Set([
   "subscription.active",
   "subscription.renewed",
+  "subscription.on_hold",
+  "subscription.cancelled",
+  "subscription.expired",
 ]);
 
 const REVERSAL_EVENTS = new Set(["refund.succeeded"]);
@@ -53,11 +56,13 @@ async function recordPayment(event, webhookId, affiliateId = null) {
   const data = event?.data || {};
   const customer = customerDetails(event);
   const paidAt = event?.timestamp || data.created_at || data.order_date || new Date().toISOString();
+  const subscriptionId = String(data.subscription_id || "");
+  const isSubscription = Boolean(subscriptionId);
   await query(
     `INSERT INTO payment_records (
       id, subscription_id, customer_email, customer_name, amount_cents, currency, status,
-      event_type, coupon_code, affiliate_id, paid_at
-    ) VALUES ($1,$2,$3,$4,$5,$6,'paid',$7,$8,$9,$10)
+      purchase_type, subscription_status, event_type, coupon_code, affiliate_id, paid_at
+    ) VALUES ($1,$2,$3,$4,$5,$6,'paid',$7,$8,$9,$10,$11,$12)
     ON CONFLICT (id) DO UPDATE SET
       subscription_id = EXCLUDED.subscription_id,
       customer_email = COALESCE(NULLIF(EXCLUDED.customer_email, ''), payment_records.customer_email),
@@ -65,6 +70,8 @@ async function recordPayment(event, webhookId, affiliateId = null) {
       amount_cents = EXCLUDED.amount_cents,
       currency = EXCLUDED.currency,
       status = 'paid',
+      purchase_type = EXCLUDED.purchase_type,
+      subscription_status = CASE WHEN EXCLUDED.subscription_status <> '' THEN EXCLUDED.subscription_status ELSE payment_records.subscription_status END,
       event_type = EXCLUDED.event_type,
       coupon_code = COALESCE(NULLIF(EXCLUDED.coupon_code, ''), payment_records.coupon_code),
       affiliate_id = COALESCE(EXCLUDED.affiliate_id, payment_records.affiliate_id),
@@ -77,6 +84,8 @@ async function recordPayment(event, webhookId, affiliateId = null) {
       customer.name,
       extractAmountCents(event),
       data.currency || "USD",
+      isSubscription ? "subscription" : "one_time",
+      isSubscription ? "active" : "",
       type,
       extractCouponCode(event),
       affiliateId,
@@ -84,6 +93,37 @@ async function recordPayment(event, webhookId, affiliateId = null) {
     ],
   );
   return paymentId;
+}
+
+async function syncSubscription(event) {
+  const data = event?.data || {};
+  const subscriptionId = String(data.subscription_id || data.id || "");
+  if (!subscriptionId) return null;
+  const customer = customerDetails(event);
+  const status = String(event?.type || "").replace("subscription.", "");
+  const paymentId = String(data.payment_id || data?.payload?.payment_id || "");
+  if (paymentId) {
+    await query(
+      `UPDATE payment_records
+       SET subscription_id = $2, purchase_type = 'subscription', subscription_status = $3, updated_at = NOW()
+       WHERE id = $1`,
+      [paymentId, subscriptionId, status],
+    );
+    return subscriptionId;
+  }
+  if (customer.email) {
+    await query(
+      `UPDATE payment_records
+       SET subscription_id = $2, purchase_type = 'subscription', subscription_status = $3, updated_at = NOW()
+       WHERE id = (
+         SELECT id FROM payment_records
+         WHERE customer_email = $1 AND paid_at >= NOW() - INTERVAL '10 minutes'
+         ORDER BY paid_at DESC NULLS LAST, created_at DESC LIMIT 1
+       )`,
+      [customer.email, subscriptionId, status],
+    );
+  }
+  return subscriptionId;
 }
 
 export async function lookupAffiliateByCode(code) {
@@ -111,8 +151,9 @@ export async function processAffiliateSale(event, webhookId) {
   if (REVERSAL_EVENTS.has(type)) {
     return reverseConversion(event, webhookId);
   }
-  if (!COMMISSION_EVENTS.has(type)) {
-    return { skipped: true, reason: "event_type" };
+  const subscriptionId = SUBSCRIPTION_EVENTS.has(type) ? await syncSubscription(event) : null;
+  if (!PAYMENT_EVENTS.has(type)) {
+    return { ok: true, subscriptionId, reason: "subscription_status" };
   }
 
   const couponCode = extractCouponCode(event);

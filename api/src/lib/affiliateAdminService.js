@@ -128,6 +128,8 @@ async function listRecentPayments(limit = 150) {
     amountCents: Number(row.amount_cents) || 0,
     currency: row.currency || "USD",
     status: row.status || "paid",
+    purchaseType: row.purchase_type || "one_time",
+    subscriptionStatus: row.subscription_status || "",
     eventType: row.event_type || "",
     couponCode: row.coupon_code || "",
     affiliateName: row.affiliate_name || "",
@@ -140,6 +142,7 @@ async function masterMetrics() {
   const { rows } = await query(`SELECT * FROM affiliate_conversions LIMIT 2000`);
   const paymentTotals = await query(
     `SELECT COUNT(*) FILTER (WHERE status = 'paid')::INTEGER AS paid_customers,
+            COUNT(DISTINCT subscription_id) FILTER (WHERE subscription_id <> '' AND subscription_status = 'active')::INTEGER AS active_subscribers,
             COALESCE(SUM(amount_cents) FILTER (WHERE status = 'paid'), 0)::INTEGER AS paid_revenue
      FROM payment_records`,
   );
@@ -164,6 +167,7 @@ async function masterMetrics() {
     paidCommissionCents,
     totalConversions,
     paidCustomers: Number(paymentTotals.rows[0]?.paid_customers) || 0,
+    activeSubscribers: Number(paymentTotals.rows[0]?.active_subscribers) || 0,
     paidRevenueCents: Number(paymentTotals.rows[0]?.paid_revenue) || 0,
     activeAffiliates: affiliates.filter((a) => a.status === "active").length,
     totalAffiliates: affiliates.length,

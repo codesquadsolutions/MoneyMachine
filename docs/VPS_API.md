@@ -381,3 +381,10 @@ Details: [STEP3_WEBHOOK.md](./STEP3_WEBHOOK.md).
 ## Port tip
 
 If 8082 is taken later, set `PORT=…` in `.env`, update Traefik proxy `proxy_pass` / nginx, restart pm2 + proxy container.
+
+
+nano /root/docker-compose.yml
+
+nano /var/www/flipur/api/.env
+
+cd /root && docker compose restart flipur-api
