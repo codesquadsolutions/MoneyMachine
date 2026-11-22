@@ -13,7 +13,6 @@
     "build": "npm run build:web && npm run build:admin",
     "deploy:web": "npm run build:web && npx firebase-tools deploy --only hosting:web",
     "deploy:admin": "npm run build:admin && npx firebase-tools deploy --only hosting:admin",
-    "deploy:sandbox-backend": "npm run build:web && npx firebase-tools deploy --only firestore:rules,firestore:indexes,functions,hosting:web --force",
-    "deploy:functions": "npx firebase-tools deploy --only functions --force"
+    "deploy:firestore": "npx firebase-tools deploy --only firestore:rules,firestore:indexes"
   }
 }
