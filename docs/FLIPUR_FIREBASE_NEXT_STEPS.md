@@ -1,77 +1,50 @@
-# Flipur on Firebase (`flipur-404bd`) — what’s done vs what you do
+# Firebase for Flipur (hosting + optional Auth)
 
-Your new project: **flipur-404bd** (Gmail: flipurtrade).
+**Current project:** `money-machine-247` (see `.firebaserc`).  
+**Backend:** VPS Express + Postgres — **not** Cloud Functions. See [ARCHITECTURE.md](./ARCHITECTURE.md).
 
-## Already configured in this repo (by Cursor)
+Older notes for project `flipur-404bd` and `deploy:sandbox-backend` are obsolete.
 
-- `.firebaserc` → default project `flipur-404bd`
-- `apps/web/.env.local` → Firebase web config (Vite reads this automatically; you do not edit `.env.example`)
-- Dodo defaults stay in **test_mode** until you set live
+## What Firebase is used for
 
-## Your live URLs after deploy
+| Feature | Status |
+|---------|--------|
+| Hosting (`apps/web`, `apps/admin`) | **Yes** — primary deploy path |
+| Auth Email/Password for admin shell | Optional / used when web config present |
+| Firestore | Legacy / migration source; runtime data is **Postgres** |
+| Cloud Functions | **Do not deploy** for Flipur go-live (`functions/` is legacy) |
+
+## Live URLs after hosting deploy
 
 | What | URL |
 |------|-----|
-| Public site | https://flipur-404bd.web.app |
-| Public site (alt) | https://flipur-404bd.firebaseapp.com |
-| Admin (after admin deploy) | https://flipur-404bd-admin.web.app |
-| Webhook (Dodo test) | `https://us-central1-flipur-404bd.cloudfunctions.net/dodoWebhook` |
-| Custom domain later | flipur.trade → add in Hosting when ready |
+| Public | https://flipur.trade |
+| Hosting fallback | https://money-machine-247.web.app |
+| Admin | https://money-machine-247-admin.web.app |
+| API (not Firebase) | https://api.flipur.trade |
+| Webhook (not Firebase) | `https://api.flipur.trade/api/webhooks/dodo` |
 
-## Checkout (sandbox)
+## Deploy hosting
 
-- Staging site: https://flipur-404bd.web.app/pricing → should open **Dodo test checkout** (not red INTERNAL).
-- Return URL after pay: `https://flipur-404bd.web.app/checkout/success`
-- Webhook: `https://us-central1-flipur-404bd.cloudfunctions.net/dodoWebhook` (test mode in Dodo dashboard)
-
-If **Monthly** shows the wrong plan name on Dodo, swap or fix `DODO_FLIPUR_PRODUCT_ID_MONTHLY` / `_YEARLY` in `.local/dodo-test-secrets.txt` and run `.\scripts\import-dodo-test-secrets.ps1` + `npm run deploy:sandbox-backend`.
-
-## If secrets fail: “must be on the Blaze plan”
-
-Firebase **Functions secrets** need Blaze **and** billing linked (not just creating the project).
-
-1. Open: https://console.firebase.google.com/project/flipur-404bd/usage/details  
-2. **Upgrade** → choose **Blaze** → add payment method → finish.  
-3. Wait **2–5 minutes**, then run `.\scripts\set-dodo-sandbox-secrets.ps1` again.
-
-Until Blaze is active, you can still run **`npm run deploy:web`** (website only — checkout will not work yet).
-
-## The only 2 things only you can do
-
-### 1) Dodo test secrets (easiest: one small file)
-
-1. Copy `.local/dodo-test-secrets.example` → `.local/dodo-test-secrets.txt`
-2. Paste your **test** API key and webhook key from Dodo (two lines only).
-3. Run:
-
-```powershell
-cd C:\Users\ADMIN\OneDrive\Desktop\TS\X\claude\MoneyMachine
-.\scripts\import-dodo-test-secrets.ps1
-npm run deploy:sandbox-backend
+```bash
+npx firebase-tools login
+npx firebase-tools use money-machine-247
+npm run deploy:web
+npm run deploy:admin
 ```
 
-Alternative: `.\scripts\set-dodo-sandbox-secrets.ps1` (paste at each prompt).
+Ensure production env has `VITE_API_BASE=https://api.flipur.trade` before build.
 
-Affiliate admin password (after deploy): see `.local/operator-login.txt` on your PC (not in git).
+## Checkout / Dodo
 
-Then in **Dodo dashboard (test mode)** → Webhooks → URL = line above.
+All checkout + webhook secrets live on the **VPS** (`api/.env`).  
+Guide: [PRODUCTION_GO_LIVE.md](./PRODUCTION_GO_LIVE.md), [VPS_API.md](./VPS_API.md), [STEP3_WEBHOOK.md](./STEP3_WEBHOOK.md).
 
-### 2) Test checkout
+## Custom domain
 
-Open https://flipur-404bd.web.app/pricing (or localhost:5173 after `npm run dev:web`)
+[DOMAIN_CONNECT_FLIPUR_TRADE.md](./DOMAIN_CONNECT_FLIPUR_TRADE.md)  
+SSL / AAAA issues: [FIX_FLIPUR_SSL_INCognito.md](./FIX_FLIPUR_SSL_INCognito.md)
 
-Card: `4242 4242 4242 4242` · 06/32 · CVV 123
+## Admin login
 
-## Commands reference
-
-```powershell
-npm run dev:web              # local site
-npm run deploy:web           # hosting only
-npm run deploy:sandbox-backend  # hosting + firestore + functions
-```
-
-## Connect flipur.trade
-
-**Full checklist:** [DOMAIN_CONNECT_FLIPUR_TRADE.md](./DOMAIN_CONNECT_FLIPUR_TRADE.md)
-
-Short version: Firebase Hosting → add `flipur.trade` → DNS at registrar → Auth authorized domain → then set `FLIPUR_SITE_ORIGIN=https://flipur.trade` in `functions/.env.flipur-404bd` and redeploy.
+[ADMIN_LOGIN_SETUP.md](./ADMIN_LOGIN_SETUP.md)

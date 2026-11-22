@@ -1,50 +1,62 @@
-# Local support chat (Flipur widget + knowledge base)
+# Support chat (n8n + Flipur widget)
 
-The marketing site loads your lightweight widget from `SupportChat.jsx`. Answers come from the **chatbot** server + `kb/flipur.md` (synced from this repo’s knowledge base).
+Production support chat on https://flipur.trade uses the **engine SDK** + an **n8n Chat Trigger** webhook. Knowledge for the agent: [flipur-n8n-knowledge-base.md](./flipur-n8n-knowledge-base.md).
 
-## One-time setup
+## Production (default)
 
-1. **Gemini API key** (free tier): https://aistudio.google.com  
-2. In `Desktop/voice/chatbot/chatbot/server`:
+`apps/web/src/components/SupportChat.jsx` loads:
 
-   ```powershell
-   cd C:\Users\ADMIN\OneDrive\Desktop\voice\chatbot\chatbot\server
-   npm install
-   copy .env.example .env
-   ```
+| Setting | Default |
+|---------|---------|
+| SDK | `/support-widget/engine-sdk.js` |
+| Webhook | `https://n8n.codesquadsolutions.com/webhook/54827097-2aa9-4332-bf43-323b29c99b75/chat` |
+| Bot id | `n8n-flipur` |
 
-   Edit `.env`: paste `GEMINI_API_KEY`, set `GEMINI_MODEL=gemini-3.5-flash-lite` (older model names in the README often 404), keep `ALLOWED_ORIGINS=http://localhost:5173,https://flipur.trade`
+Overrides at build time:
 
-3. **Refresh knowledge** after editing `docs/Flipur-BotPenguin-Knowledge-Base.md` and/or short Q&A in `docs/flipur-faq-qa.md`:
+```env
+# apps/web/.env.production or .env.local
+VITE_SUPPORT_CHAT_WEBHOOK_URL=https://n8n.codesquadsolutions.com/webhook/…/chat
+VITE_SUPPORT_CHAT_SDK_URL=/support-widget/engine-sdk.js
+```
+
+Keep the n8n agent system prompt / Google Doc KB in sync with `docs/flipur-n8n-knowledge-base.md`.
+
+CRM lead ingest from chat (optional): `POST https://api.flipur.trade/api/crm/ingest` with header `x-crm-secret: $CRM_INGEST_SECRET` (see `api/.env.example`).
+
+---
+
+## Local site + production n8n (simplest)
+
+```bash
+npm run dev:web
+```
+
+Open http://localhost:5173 — bubble uses local `engine-sdk.js` and the default n8n webhook (CORS must allow localhost on the n8n side if you restrict origins).
+
+---
+
+## Optional: local Gemini chatbot (legacy / offline KB)
+
+Older path used a Desktop `voice/chatbot` server + BotPenguin-era markdown. Prefer n8n for production. If you still run the local bot:
+
+1. Gemini API key in the chatbot server `.env`
+2. Sync KB copies:
 
    ```powershell
    npm run sync:chat-kb
    ```
 
-   Restart the chat server (KB reloads on boot).
+   That script copies `docs/Flipur-BotPenguin-Knowledge-Base.md` / FAQ into the external chatbot KB and may overwrite `apps/web/public/support-widget/sdk.js` (legacy SDK — production uses **`engine-sdk.js`**).
 
-## Run locally (two terminals)
+3. Run chatbot server (port 3000) + `npm run dev:web`.
 
-**Terminal A — chat API + widget**
+Do **not** point production at `my-bot.onrender.com` unless you intentionally revive that stack.
 
-```powershell
-cd C:\Users\ADMIN\OneDrive\Desktop\voice\chatbot\chatbot\server
-npm run dev
-```
+---
 
-Check: http://localhost:3000/health → `{"ok":true,"embeddings":true}` when vector index is ready (first boot may take a minute while chunks embed; cached in `server/.cache/`).
+## Related
 
-**Terminal B — Flipur site**
-
-```powershell
-cd C:\Users\ADMIN\OneDrive\Desktop\TS\X\claude\MoneyMachine
-npm run dev:web
-```
-
-Open http://localhost:5173 → green chat bubble → ask e.g. “How much is Pro?” or “Which platforms?”
-
-In dev, the **bubble** loads from `apps/web/public/support-widget/sdk.js` (same origin as Vite). **Replies** still need the chat server on port **3000** (`npm run dev` in `chatbot/server`). Run `npm run sync:chat-kb` after KB/UI widget changes to refresh `sdk.js` in public.
-
-## Production
-
-Deploy the `chatbot` folder to Render (`server` as root). Set `ALLOWED_ORIGINS=https://flipur.trade`. Production site falls back to `https://my-bot.onrender.com/widget/sdk.js` unless `VITE_SUPPORT_CHAT_SDK_URL` is set at build time.
+- Widget UI: `apps/web/public/support-widget/engine-sdk.js`
+- Agent KB: [flipur-n8n-knowledge-base.md](./flipur-n8n-knowledge-base.md)
+- Short FAQ: [flipur-faq-qa.md](./flipur-faq-qa.md)

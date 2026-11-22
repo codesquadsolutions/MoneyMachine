@@ -2,10 +2,12 @@
 
 **Last updated:** November 2026  
 **Website:** https://flipur.trade  
+**API / webhook (ops, not for end users):** https://api.flipur.trade  
 **Brand:** Flipur / Flipur.trade  
 **Company:** Codesquad Solutions Pvt. Ltd.  
 **Support email:** makemoney@flipur.trade  
 **Instagram:** https://www.instagram.com/flipurtrade  
+**Widget:** n8n Chat Trigger + `apps/web/public/support-widget/engine-sdk.js` — see [LOCAL_SUPPORT_CHAT.md](./LOCAL_SUPPORT_CHAT.md) 
 
 ## Agent rules
 

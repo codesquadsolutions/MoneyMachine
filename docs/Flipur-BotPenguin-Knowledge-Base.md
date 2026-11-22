@@ -1,4 +1,7 @@
-# Flipur — BotPenguin Knowledge Base
+# Flipur — BotPenguin Knowledge Base (legacy archive)
+
+> **Production support agent** uses **n8n** + [flipur-n8n-knowledge-base.md](./flipur-n8n-knowledge-base.md).  
+> Keep that file as the source of truth. This BotPenguin-era doc is retained for `npm run sync:chat-kb` / offline RAG only.
 
 **Document version:** November 2026  
 **Website:** https://flipur.trade  

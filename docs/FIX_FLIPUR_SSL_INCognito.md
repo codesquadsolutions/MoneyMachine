@@ -37,13 +37,13 @@ Delete the **AAAA** record on `@` with content like:
 
 **Do not delete:**
 
-- **A** `199.36.158.100` (keep unless Firebase Console shows different A values)
-- **TXT** `hosting-site=flipur-404bd`
+- **A** records Firebase lists for the **current** hosting site (`money-machine-247` — check Console; IPs can change)
+- **TXT** `hosting-site=…` from Firebase (value matches your Hosting site id)
 - MX / SPF / DKIM (email)
 
 ### Step 3 — Add Firebase A/AAAA only (if Firebase shows them)
 
-1. [Firebase Hosting → flipur-404bd → Domains → flipur.trade](https://console.firebase.google.com/project/flipur-404bd/hosting/sites/flipur-404bd)
+1. [Firebase Hosting → Domains → flipur.trade](https://console.firebase.google.com/project/money-machine-247/hosting) (project **money-machine-247**)
 2. Open domain setup / DNS instructions.
 3. For each **A** and **AAAA** Firebase lists, ensure Hostinger matches exactly.
 4. If Firebase lists **only A records** (no AAAA), leave **no AAAA** on `@` — that is OK.

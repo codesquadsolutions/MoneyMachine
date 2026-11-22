@@ -1,66 +1,66 @@
 # Flipur affiliate system
 
-## What was added
+Backend is the **VPS Express + Postgres API** (`api/`). Legacy Cloud Functions under `functions/affiliate/` are **not** used for production.
 
-- **Firestore** collections: `affiliates`, `affiliateCodes`, `affiliateConversions`, `affiliateTickets`, `affiliateStatsDaily`, `webhookDedup`
-- **Cloud Functions**: `registerAffiliate`, `getAffiliateDashboard`, `submitAffiliateTicket`, `createCheckoutSession`, `affiliateAdmin`, `dodoWebhook`
-- **Web** (`apps/web`): `/affiliate/register` (interest form, no password), `/affiliate/login`, `/affiliate/dashboard`, `?ref=` capture
-- **Firestore** `affiliateLeads` — public interest submissions; admin onboards via **Onboard** → Firebase user + coupon + password-reset link
-- **Admin** (`apps/admin`): `/affiliate-master` leaderboard, approve/edit affiliates, ticket inbox
+## What exists
 
-## Secrets (Firebase Functions)
+- **Postgres** tables for affiliates, codes, conversions, tickets, daily stats, webhook dedup (created by `api` `migrate()`)
+- **API routes** under `/api/affiliate/*` and `/api/affiliate-admin`
+- **Web** (`apps/web`): `/affiliate/register` (interest), `/affiliate/login`, `/affiliate/dashboard`, `?ref=` capture
+- **Admin** (`apps/admin`): `/affiliate-master` — onboard, edit, tickets, mark commissions paid
 
-```bash
-firebase functions:secrets:set DODO_PAYMENTS_API_KEY
-firebase functions:secrets:set DODO_PAYMENTS_WEBHOOK_KEY
-firebase functions:secrets:set DODO_FLIPUR_PRODUCT_ID
-firebase functions:secrets:set DODO_FLIPUR_PRODUCT_ID_MONTHLY
-# Flipur Monthly: pdt_0NrZte2dnYENTpGvfHKde
-firebase functions:secrets:set DODO_FLIPUR_PRODUCT_ID_YEARLY
-# Flipur Yearly: pdt_0NreUeewB7yZnO1EoWQoF
-# optional: firebase functions:secrets:set DODO_AUTORENEW_DISCOUNT_CODE
-firebase functions:secrets:set ADMIN_PASSWORD   # existing waitlist admin
+## Secrets (VPS `api/.env`)
+
+```env
+ADMIN_USER=admin
+ADMIN_PASSWORD=CHANGE_ME
+JWT_SECRET=long-random-string
+DODO_PAYMENTS_API_KEY=
+DODO_PAYMENTS_WEBHOOK_KEY=
+DODO_FLIPUR_PRODUCT_ID_MONTHLY=
+DODO_FLIPUR_PRODUCT_ID_YEARLY=
+DODO_PAYMENTS_ENVIRONMENT=test_mode
+FLIPUR_SITE_ORIGIN=https://flipur.trade
 ```
 
-Optional env (Firebase runtime config or `.env` for emulators):
-
-- `DODO_PAYMENTS_ENVIRONMENT=test_mode` (default) or `live_mode`
-- `FLIPUR_SITE_ORIGIN=https://flipur.trade`
+Optional: `DODO_AUTORENEW_DISCOUNT_CODE` if you use that discount at checkout.
 
 ## Dodo webhook URL
 
-After deploy:
+`https://api.flipur.trade/api/webhooks/dodo`
 
-`https://us-central1-<PROJECT_ID>.cloudfunctions.net/dodoWebhook`
+Events: `payment.succeeded`, `subscription.active`, `subscription.renewed`, `refund.succeeded`.
 
-Subscribe to at least: `payment.succeeded`, `subscription.active`, `subscription.renewed`, `refund.succeeded`.
-
-Pass affiliate codes at checkout via `discount_codes` on Checkout Sessions (`createCheckoutSession` callable reads stored `?ref=`).
+Affiliate codes are passed at checkout via discount/coupon from stored `?ref=` (see `createCheckoutSession` / `POST /api/affiliate/checkout`).
 
 ## Deploy
 
 ```bash
-npm install
-npm --prefix functions install
-npm run build
-firebase deploy --only firestore:rules,firestore:indexes,functions,hosting
-```
+# Frontends
+npm run deploy:web
+npm run deploy:admin
 
-## Seed demo data
-
-With Application Default Credentials:
-
-```bash
-cd functions && node scripts/seedAffiliates.js
+# API — upload + restart on VPS (see docs/VPS_API.md)
+pm2 restart flipur-api
 ```
 
 ## Local dev
 
-- Web: `npm run dev:web` → affiliate routes on port 5173
-- Admin: `npm run dev:admin` → `/affiliate-master` (needs deployed functions or emulators)
-- Set `apps/admin/.env`: `VITE_FIREBASE_PROJECT_ID`, `VITE_AFFILIATE_ADMIN_URL` (optional override)
-- Set `apps/web/.env`: Firebase web config; optional `VITE_USE_FUNCTIONS_EMULATOR=true`
+```bash
+npm run dev:api    # :8080
+npm run dev:web    # :5173 affiliate routes
+npm run dev:admin  # :5174 /affiliate-master
+```
+
+Set `VITE_API_BASE=http://localhost:8080` (and admin `VITE_AFFILIATE_ADMIN_URL`).
 
 ## Payouts
 
-Commissions are tracked in Firestore. Pay affiliates manually (PayPal, bank, etc.), then in **Affiliate master → Commission payouts** select conversions and **Mark selected paid**. That sets `affiliateConversions.status` to `paid` so pending balances drop on the affiliate dashboard.
+Commissions are tracked in Postgres. Pay affiliates manually (PayPal, bank, etc.), then in **Affiliate master → Commission payouts** select conversions and **Mark selected paid** so pending balances drop on the partner dashboard.
+
+## Related
+
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+- [docs/VPS_API.md](./docs/VPS_API.md)
+- [docs/STEP3_WEBHOOK.md](./docs/STEP3_WEBHOOK.md)
+- [docs/ADMIN_LOGIN_SETUP.md](./docs/ADMIN_LOGIN_SETUP.md)
