@@ -15,6 +15,7 @@ import { PricingPage } from "./pages/PricingPage";
 import { CheckoutSuccess } from "./components/CheckoutSuccess.jsx";
 import { AboutPage, BillingPage, SecurityPage, SupportPage } from "./pages/TrustPages.jsx";
 import { captureReferralFromSearch } from "./lib/referral.js";
+import { captureAttributionFromSearch } from "./lib/attribution.js";
 
 const AffiliateRoutes = lazy(() =>
   import("./affiliate/AffiliateRoutes.jsx").then((m) => ({ default: m.AffiliateRoutes })),
@@ -72,6 +73,7 @@ function Shell() {
 
   useEffect(() => {
     captureReferralFromSearch(location.search);
+    captureAttributionFromSearch(location.search);
   }, [location.search]);
 
   return (

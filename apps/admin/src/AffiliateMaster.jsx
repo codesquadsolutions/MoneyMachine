@@ -4,7 +4,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "./firebase";
 import { affiliateAdminRequest, money } from "./affiliateApi";
 
-export function AffiliateMaster({ onSignOut }) {
+export function AffiliateMaster({ onSignOut, embedded = false }) {
   const [data, setData] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [error, setError] = useState("");
@@ -57,28 +57,39 @@ export function AffiliateMaster({ onSignOut }) {
   }
 
   return (
-    <main className="w admin aff-master">
-      <header className="bar">
-        <Link className="logo" to="/">
-          <img src="/logo.png" alt="" />
-          Flipur<span> affiliate master</span>
-        </Link>
-        <nav className="admin-links">
-          <Link to="/">Waitlist</Link>
-          <Link to="/affiliate-master" className="on">
-            Affiliates
+    <div className={embedded ? "crm-page aff-master" : "w admin aff-master"}>
+      {embedded ? (
+        <div className="page-head">
+          <div>
+            <h1>Affiliates</h1>
+            <p className="note">Interest leads, onboarded partners, payouts, and tickets.</p>
+          </div>
+        </div>
+      ) : (
+        <header className="bar">
+          <Link className="logo" to="/">
+            <img src="/logo.png" alt="" />
+            Flipur<span> affiliate master</span>
           </Link>
-        </nav>
-        <button
-          className="btn s sm"
-          type="button"
-          onClick={() => (onSignOut ? onSignOut() : auth && signOut(auth))}
-        >
-          Sign out
-        </button>
-      </header>
+          <div className="bar-actions">
+            <nav className="admin-links">
+              <Link to="/">Dashboard</Link>
+              <Link to="/affiliate-master" className="on">
+                Affiliates
+              </Link>
+            </nav>
+            <button
+              className="btn s sm"
+              type="button"
+              onClick={() => (onSignOut ? onSignOut() : auth && signOut(auth))}
+            >
+              Sign out
+            </button>
+          </div>
+        </header>
+      )}
 
-      <div className="stats pair">
+      <div className="stats aff-stats">
         <Stat label="Revenue (affiliate)" value={money(data?.totalRevenueCents)} />
         <Stat label="Commissions" value={money(data?.totalCommissionCents)} />
         <Stat label="Pending payout" value={money(data?.pendingPayoutCents)} />
@@ -88,9 +99,16 @@ export function AffiliateMaster({ onSignOut }) {
         <Stat label="Open leads" value={data?.affiliateLeads ?? 0} />
       </div>
 
-      <section className="aff-leads">
-        <h2>Interest leads</h2>
-        <p className="note sm">Applicants who submitted the public form. Contact them, then onboard to create login + coupon.</p>
+      {error ? <p className="err">{error}</p> : null}
+      {busy && !data ? <p className="note">Loading…</p> : null}
+
+      <section className="aff-panel">
+        <div className="aff-panel-head">
+          <div>
+            <h2>Interest leads</h2>
+            <p className="note sm">Applicants who submitted the public form. Contact them, then onboard to create login + coupon.</p>
+          </div>
+        </div>
         <LeadTable
           leads={(data?.leads || []).filter((l) => l.status === "new" || l.status === "contacted")}
           busy={busy}
@@ -100,69 +118,72 @@ export function AffiliateMaster({ onSignOut }) {
         />
       </section>
 
-      <h2 className="aff-section-title">Onboarded affiliates</h2>
-      <div className="tools">
-        <input placeholder="Search affiliate" value={query} onChange={(e) => setQuery(e.target.value)} />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="all">All statuses</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
-          <option value="suspended">Suspended</option>
-        </select>
-      </div>
-
-      {error ? <p className="err">{error}</p> : null}
-      {busy ? <p className="note">Loading…</p> : null}
-
-      <div className="tw">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Code</th>
-              <th>Rate</th>
-              <th>Conv.</th>
-              <th>Revenue</th>
-              <th>Commission</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {affiliates.length === 0 ? (
-              <tr className="empty">
-                <td colSpan={9}>No affiliates yet.</td>
+      <section className="aff-panel">
+        <div className="aff-panel-head">
+          <div>
+            <h2>Onboarded affiliates</h2>
+            <p className="note sm">Search and manage coupon codes, rates, and status.</p>
+          </div>
+        </div>
+        <div className="tools">
+          <input placeholder="Search affiliate" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
+        <div className="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Code</th>
+                <th>Rate</th>
+                <th>Conv.</th>
+                <th>Revenue</th>
+                <th>Commission</th>
+                <th>Status</th>
+                <th></th>
               </tr>
-            ) : (
-              affiliates.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.displayName}</td>
-                  <td>{row.email}</td>
-                  <td>{row.couponCode}</td>
-                  <td>{(row.commissionRateBps / 100).toFixed(1)}%</td>
-                  <td>{row.conversions}</td>
-                  <td>{money(row.revenueCents)}</td>
-                  <td>{money(row.commissionCents)}</td>
-                  <td>
-                    <span className={`badge ${row.status}`}>{row.status}</span>
-                  </td>
-                  <td className="actions">
-                    {row.status === "pending" ? (
-                      <button className="btn s sm" type="button" disabled={busy} onClick={() => run(() => affiliateAdminRequest("approve", { affiliateId: row.id }))}>
-                        Approve
-                      </button>
-                    ) : null}
-                    <button className="btn s sm" type="button" disabled={busy} onClick={() => setEdit(row)}>
-                      Edit
-                    </button>
-                  </td>
+            </thead>
+            <tbody>
+              {affiliates.length === 0 ? (
+                <tr className="empty">
+                  <td colSpan={9}>No affiliates yet.</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                affiliates.map((row) => (
+                  <tr key={row.id}>
+                    <td data-label="Name">{row.displayName}</td>
+                    <td data-label="Email">{row.email}</td>
+                    <td data-label="Code">{row.couponCode}</td>
+                    <td data-label="Rate">{(row.commissionRateBps / 100).toFixed(1)}%</td>
+                    <td data-label="Conv.">{row.conversions}</td>
+                    <td data-label="Revenue">{money(row.revenueCents)}</td>
+                    <td data-label="Commission">{money(row.commissionCents)}</td>
+                    <td data-label="Status">
+                      <span className={`badge ${row.status}`}>{row.status}</span>
+                    </td>
+                    <td className="actions">
+                      {row.status === "pending" ? (
+                        <button className="btn s sm" type="button" disabled={busy} onClick={() => run(() => affiliateAdminRequest("approve", { affiliateId: row.id }))}>
+                          Approve
+                        </button>
+                      ) : null}
+                      <button className="btn s sm" type="button" disabled={busy} onClick={() => setEdit(row)}>
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <ConversionPayoutSection
         conversions={data?.conversions || []}
@@ -170,26 +191,35 @@ export function AffiliateMaster({ onSignOut }) {
         onMarkPaid={(ids) => run(() => affiliateAdminRequest("markConversionsPaid", { conversionIds: ids }))}
       />
 
-      <section className="aff-ticket-admin">
-        <h2>Support tickets</h2>
-        <div className="ticket-grid">
-          {tickets.map((t) => (
-            <article key={t.id} className="card ticket">
-              <div className="row">
-                <strong>{t.subject}</strong>
-                <span className={`badge ${t.status}`}>{t.status}</span>
-              </div>
-              <p className="sm">{t.message}</p>
-              <p className="sm muted">
-                {t.affiliateName} · {t.affiliateEmail}
-              </p>
-              {t.adminReply ? <p className="reply sm">Reply: {t.adminReply}</p> : null}
-              <button className="btn s sm" type="button" onClick={() => setReply(t)}>
-                Reply
-              </button>
-            </article>
-          ))}
+      <section className="aff-panel">
+        <div className="aff-panel-head">
+          <div>
+            <h2>Support tickets</h2>
+            <p className="note sm">Replies from onboarded affiliates.</p>
+          </div>
         </div>
+        {tickets.length === 0 ? (
+          <p className="empty-state">No support tickets yet.</p>
+        ) : (
+          <div className="ticket-grid">
+            {tickets.map((t) => (
+              <article key={t.id} className="card ticket">
+                <div className="row">
+                  <strong>{t.subject}</strong>
+                  <span className={`badge ${t.status}`}>{t.status}</span>
+                </div>
+                <p className="sm">{t.message}</p>
+                <p className="sm muted">
+                  {t.affiliateName} · {t.affiliateEmail}
+                </p>
+                {t.adminReply ? <p className="reply sm">Reply: {t.adminReply}</p> : null}
+                <button className="btn s sm" type="button" onClick={() => setReply(t)}>
+                  Reply
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       {edit ? (
@@ -222,7 +252,7 @@ export function AffiliateMaster({ onSignOut }) {
       {onboardResult ? (
         <OnboardResultModal result={onboardResult} onClose={() => setOnboardResult(null)} />
       ) : null}
-    </main>
+    </div>
   );
 }
 
@@ -257,18 +287,22 @@ function ConversionPayoutSection({ conversions, busy, onMarkPaid }) {
   }
 
   return (
-    <section className="aff-payouts">
-      <h2 className="aff-section-title">Commission payouts</h2>
-      <p className="note sm">
-        Pay affiliates manually, then mark conversions as paid so dashboards stop counting them as pending.
-      </p>
-      <div className="tools">
-        <button className="btn s sm" type="button" disabled={busy || !unpaid.length} onClick={toggleAll}>
-          {selected.size === unpaid.length && unpaid.length ? "Clear selection" : "Select unpaid"}
-        </button>
-        <button className="btn p sm" type="button" disabled={busy || !selected.size} onClick={markSelected}>
-          Mark selected paid ({selected.size})
-        </button>
+    <section className="aff-panel">
+      <div className="aff-panel-head">
+        <div>
+          <h2>Commission payouts</h2>
+          <p className="note sm">
+            Pay affiliates manually, then mark conversions as paid so dashboards stop counting them as pending.
+          </p>
+        </div>
+        <div className="tools aff-panel-tools">
+          <button className="btn s sm" type="button" disabled={busy || !unpaid.length} onClick={toggleAll}>
+            {selected.size === unpaid.length && unpaid.length ? "Clear selection" : "Select unpaid"}
+          </button>
+          <button className="btn p sm" type="button" disabled={busy || !selected.size} onClick={markSelected}>
+            Mark selected paid ({selected.size})
+          </button>
+        </div>
       </div>
       <div className="tw">
         <table>
@@ -294,23 +328,23 @@ function ConversionPayoutSection({ conversions, busy, onMarkPaid }) {
                 const unpaidRow = row.status === "pending" || row.status === "approved";
                 return (
                   <tr key={row.id}>
-                    <td>
+                    <td data-label="Select">
                       {unpaidRow ? (
                         <input type="checkbox" checked={selected.has(row.id)} onChange={() => toggle(row.id)} disabled={busy} />
                       ) : null}
                     </td>
-                    <td>
+                    <td data-label="Affiliate">
                       {row.affiliateName || "—"}
                       <div className="sm muted">{row.affiliateEmail}</div>
                     </td>
-                    <td>{row.couponCode || "—"}</td>
-                    <td className="sm">{row.orderId}</td>
-                    <td>{money(row.saleAmountCents)}</td>
-                    <td>{money(row.commissionAmountCents)}</td>
-                    <td>
+                    <td data-label="Code">{row.couponCode || "—"}</td>
+                    <td className="sm" data-label="Order">{row.orderId}</td>
+                    <td data-label="Sale">{money(row.saleAmountCents)}</td>
+                    <td data-label="Commission">{money(row.commissionAmountCents)}</td>
+                    <td data-label="Status">
                       <span className={`badge ${row.status}`}>{row.status}</span>
                     </td>
-                    <td className="sm muted">{row.orderAt || row.createdAt || "—"}</td>
+                    <td className="sm muted" data-label="When">{row.orderAt || row.createdAt || "—"}</td>
                   </tr>
                 );
               })
@@ -324,7 +358,7 @@ function ConversionPayoutSection({ conversions, busy, onMarkPaid }) {
 
 function LeadTable({ leads, busy, onContact, onReject, onOnboard }) {
   if (!leads.length) {
-    return <p className="muted sm">No open leads.</p>;
+    return <p className="empty-state">No open leads.</p>;
   }
   return (
     <div className="tw">
@@ -342,9 +376,9 @@ function LeadTable({ leads, busy, onContact, onReject, onOnboard }) {
         <tbody>
           {leads.map((lead) => (
             <tr key={lead.id}>
-              <td>{lead.displayName}</td>
-              <td>{lead.email}</td>
-              <td className="channels sm">
+              <td data-label="Name">{lead.displayName}</td>
+              <td data-label="Email">{lead.email}</td>
+              <td className="channels sm" data-label="Channels">
                 {[
                   lead.instagram && `IG: ${lead.instagram}`,
                   lead.youtube && `YT: ${lead.youtube}`,
@@ -357,8 +391,8 @@ function LeadTable({ leads, busy, onContact, onReject, onOnboard }) {
                   .filter(Boolean)
                   .join(" · ") || "—"}
               </td>
-              <td>{lead.note || "—"}</td>
-              <td>
+              <td data-label="Note">{lead.note || "—"}</td>
+              <td data-label="Status">
                 <span className={`badge ${lead.status}`}>{lead.status}</span>
               </td>
               <td className="actions">
@@ -483,10 +517,10 @@ function OnboardResultModal({ result, onClose }) {
 
 function Stat({ label, value }) {
   return (
-    <button className="card stat on" type="button" disabled>
+    <div className="card aff-stat">
       <b>{value}</b>
       <span>{label}</span>
-    </button>
+    </div>
   );
 }
 

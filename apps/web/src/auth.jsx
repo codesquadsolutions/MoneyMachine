@@ -1,12 +1,35 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
+const API_BASE = (import.meta.env.VITE_API_BASE || "http://localhost:8080").replace(/\/$/, "");
 
 const quietErrors = new Set([
   "auth/popup-closed-by-user",
   "auth/cancelled-popup-request",
   "auth/popup-blocked",
 ]);
+
+async function waitlistStatus(email) {
+  const response = await fetch(`${API_BASE}/api/waitlist/status`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) return false;
+  return Boolean(body.joined);
+}
+
+async function waitlistJoin(payload) {
+  const response = await fetch(`${API_BASE}/api/waitlist/join`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || "Could not join the waitlist.");
+  return body;
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -19,10 +42,9 @@ export function AuthProvider({ children }) {
     let cancelled = false;
 
     (async () => {
-      const [{ auth, db, firebaseReady: configured }, { onAuthStateChanged }, { doc, getDoc }] = await Promise.all([
+      const [{ auth, firebaseReady: configured }, { onAuthStateChanged }] = await Promise.all([
         import("./firebase"),
         import("firebase/auth"),
-        import("firebase/firestore"),
       ]);
       if (cancelled) return;
       setFirebaseReady(configured);
@@ -38,8 +60,7 @@ export function AuthProvider({ children }) {
           return;
         }
         try {
-          const snap = await getDoc(doc(db, "waitlist", next.uid));
-          setJoined(snap.exists());
+          setJoined(await waitlistStatus(next.email));
         } catch {
           setJoined(false);
         }
@@ -54,8 +75,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function join() {
-    const [{ auth, db, googleProvider, firebaseReady: configured }, { signInWithPopup }, { doc, getDoc, serverTimestamp, setDoc }] =
-      await Promise.all([import("./firebase"), import("firebase/auth"), import("firebase/firestore")]);
+    const [{ auth, googleProvider, firebaseReady: configured }, { signInWithPopup }] = await Promise.all([
+      import("./firebase"),
+      import("firebase/auth"),
+    ]);
     if (!configured) {
       throw new Error("Add your Firebase web config to .env.local to turn on the waitlist.");
     }
@@ -67,15 +90,19 @@ export function AuthProvider({ children }) {
     if (!current.email) {
       throw new Error("Your Google account has no email address we can store.");
     }
-    const ref = doc(db, "waitlist", current.uid);
-    const existing = await getDoc(ref);
-    const data = {
+    const { getStoredAttribution } = await import("./lib/attribution.js");
+    const attr = getStoredAttribution();
+    await waitlistJoin({
       email: current.email,
       displayName: current.displayName || "",
       photoURL: current.photoURL || "",
-    };
-    if (!existing.exists()) data.createdAt = serverTimestamp();
-    await setDoc(ref, data, { merge: true });
+      firebaseUid: current.uid,
+      source: attr.source || "website",
+      utmSource: attr.utmSource || "",
+      utmMedium: attr.utmMedium || "",
+      utmCampaign: attr.utmCampaign || "",
+      fbclid: attr.fbclid || "",
+    });
     setUser(current);
     setJoined(true);
   }

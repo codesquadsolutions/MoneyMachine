@@ -27,7 +27,15 @@ export function AffiliateRegister() {
     setError("");
     setBusy(true);
     try {
-      await callAffiliate("submitAffiliateInterest", form);
+      const { getStoredAttribution } = await import("../lib/attribution.js");
+      const attr = getStoredAttribution();
+      await callAffiliate("submitAffiliateInterest", {
+        ...form,
+        utmSource: attr.utmSource,
+        utmMedium: attr.utmMedium,
+        utmCampaign: attr.utmCampaign,
+        fbclid: attr.fbclid,
+      });
       setDone(true);
     } catch (err) {
       setError(err.message || "Could not submit your application.");

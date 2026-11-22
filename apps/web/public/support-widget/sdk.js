@@ -44,6 +44,8 @@
     color: script.dataset.color || '#00f59b',
     logo: script.dataset.logo || defaultLogo,
     welcome: script.dataset.welcome || 'Hi! How can I help you today?',
+    // Prefer n8n Chat Trigger webhook; fall back to legacy chatbot /api/chat base.
+    webhook: script.dataset.webhook || '',
     api: script.dataset.api || base,
     theme: script.dataset.theme || 'dark',
     suggestions: parseSuggestions(script.dataset.suggestions || ''),
@@ -256,15 +258,21 @@
     if (!trimmed) return;
     add(trimmed, 'me');
     sendBtn.disabled = true;
-  showTyping();
+    showTyping();
     try {
-      const r = await fetch(`${cfg.api}/api/chat`, {
+      const endpoint = cfg.webhook || `${cfg.api.replace(/\/$/, '')}/api/chat`;
+      const body = cfg.webhook
+        ? { action: 'sendMessage', sessionId: sid, chatInput: trimmed }
+        : { session: sid, message: trimmed };
+      const r = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session: sid, message: trimmed }),
+        body: JSON.stringify(body),
       });
       const data = await r.json();
-      add(data.reply || data.error || 'No response.', 'bot');
+      const reply =
+        data.output || data.text || data.reply || data.error || 'No response.';
+      add(typeof reply === 'string' ? reply : JSON.stringify(reply), 'bot');
     } catch {
       add('Connection error. Please retry.', 'bot');
     } finally {

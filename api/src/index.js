@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import { migrate } from "./db.js";
 import { handleAffiliateAdmin } from "./lib/affiliateAdminService.js";
+import { handleCrmIngest } from "./lib/crmIngest.js";
+import { handleCrmAdmin, handleWaitlistJoin, handleWaitlistStatus } from "./lib/crmService.js";
 import affiliateRoutes from "./routes/affiliate.js";
 import webhookRoutes from "./routes/webhook.js";
 import { sendError } from "./lib/httpError.js";
@@ -46,6 +48,10 @@ app.use(express.json({ limit: "1mb" }));
 app.use("/api/affiliate", affiliateRoutes);
 app.post("/api/affiliate-admin", handleAffiliateAdmin);
 app.post("/affiliateAdmin", handleAffiliateAdmin);
+app.post("/api/crm", handleCrmAdmin);
+app.post("/api/crm/ingest", handleCrmIngest);
+app.post("/api/waitlist/join", handleWaitlistJoin);
+app.post("/api/waitlist/status", handleWaitlistStatus);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

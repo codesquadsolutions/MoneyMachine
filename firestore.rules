@@ -67,5 +67,16 @@ service cloud.firestore {
     match /webhookDedup/{docId} {
       allow read, write: if false;
     }
+
+    match /crmLeads/{leadId} {
+      allow read, write: if isAdmin();
+      match /activities/{activityId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    match /crmCampaigns/{campaignId} {
+      allow read, write: if isAdmin();
+    }
   }
 }
